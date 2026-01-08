@@ -1,0 +1,24 @@
+# Documentation files with example keys (not needed for build)
+*.md
+!README.md
+
+# Development files
+.env
+.env.local
+.env.*.local
+
+# Test files
+test-*.js
+check-*.js
+
+# Database files
+*.sql
+
+# Scripts
+*.ps1
+*.bat
+*.sh
+
+# Temporary files
+*.log
+*.tmp

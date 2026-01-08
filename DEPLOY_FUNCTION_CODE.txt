@@ -1,0 +1,10 @@
+COPY THIS ENTIRE CODE TO SUPABASE DASHBOARD
+===========================================
+
+Go to: https://supabase.com/dashboard/project/vvrulvxeaejxhwnafwrq/functions/deep-Research-gemini
+
+Click "Edit" or "Code" tab, then paste the code from:
+supabase/functions/deep-Research-gemini/index.ts
+
+Make sure you copy ONLY the TypeScript code, not any markdown files!
+

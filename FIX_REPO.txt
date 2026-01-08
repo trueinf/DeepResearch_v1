@@ -1,0 +1,16 @@
+INSTRUCTIONS TO FIX REPOSITORY STRUCTURE
+=========================================
+
+Open a NEW Command Prompt or PowerShell window (not this one) and run:
+
+cd "C:\Users\Deepika\Downloads\askDepth_updated\askDepth_gemini-main"
+
+git config --global core.pager ""
+git rm -r --cached "Downloads"
+git add -A
+git commit -m "Fix: Move all files to repository root"
+git push origin main --force
+
+This will move all files from the nested "Downloads/askDepth_updated/askDepth_gemini-main/" 
+folder to the repository root on GitHub.
+
