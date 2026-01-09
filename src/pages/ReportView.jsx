@@ -149,6 +149,34 @@ export default function ReportView() {
   }, [slides.length, previewSlideIndex])
 
   useEffect(() => {
+    let pollInterval = null
+    
+    const normalizeReport = (data) => {
+      if (!data) return null
+      
+      // Normalize keyFindings to always be an array
+      data.keyFindings = Array.isArray(data.keyFindings) 
+        ? data.keyFindings 
+        : (data.keyFindings === 0 || !data.keyFindings ? [] : [data.keyFindings])
+      
+      // Normalize sources to always be an array
+      data.sources = Array.isArray(data.sources) 
+        ? data.sources 
+        : (data.sources === 0 || !data.sources ? [] : [data.sources])
+      
+      // Ensure each finding has citations as an array
+      if (data.keyFindings && Array.isArray(data.keyFindings)) {
+        data.keyFindings = data.keyFindings.map(finding => ({
+          ...finding,
+          citations: Array.isArray(finding?.citations) 
+            ? finding.citations 
+            : (finding.citations === 0 || !finding.citations ? [] : [finding.citations])
+        }))
+      }
+      
+      return data
+    }
+    
     const loadReport = async () => {
       if (!research) {
         console.log('No research found for ID:', id)
@@ -162,63 +190,83 @@ export default function ReportView() {
       
       // Normalize data to ensure arrays are always arrays (not 0 or other values)
       if (reportData) {
-        // Universal Framework is only generated on-demand via button click, not automatically loaded
-        reportData.keyFindings = Array.isArray(reportData.keyFindings) 
-          ? reportData.keyFindings 
-          : (reportData.keyFindings === 0 || !reportData.keyFindings ? [] : [reportData.keyFindings])
-        
-        reportData.sources = Array.isArray(reportData.sources) 
-          ? reportData.sources 
-          : (reportData.sources === 0 || !reportData.sources ? [] : [reportData.sources])
-        
-        // Ensure each finding has citations as an array
-        if (reportData.keyFindings && Array.isArray(reportData.keyFindings)) {
-          reportData.keyFindings = reportData.keyFindings.map(finding => ({
-            ...finding,
-            citations: Array.isArray(finding?.citations) 
-              ? finding.citations 
-              : (finding.citations === 0 || !finding.citations ? [] : [finding.citations])
-          }))
-        }
-        
+        const normalized = normalizeReport(reportData)
         console.log('Report normalized:', {
-          hasExecutiveSummary: !!reportData.executiveSummary,
-          keyFindingsCount: reportData.keyFindings?.length || 0,
-          sourcesCount: reportData.sources?.length || 0,
-          sourcesData: reportData.sources,
-          sourcesType: Array.isArray(reportData.sources) ? 'array' : typeof reportData.sources,
-          firstSource: reportData.sources?.[0]
+          hasExecutiveSummary: !!normalized.executiveSummary,
+          keyFindingsCount: normalized.keyFindings?.length || 0,
+          sourcesCount: normalized.sources?.length || 0,
+          sourcesData: normalized.sources,
+          sourcesType: Array.isArray(normalized.sources) ? 'array' : typeof normalized.sources,
+          firstSource: normalized.sources?.[0]
         })
+        setReport(normalized)
+        setLoading(false)
       } else {
         console.log('No report data found - research may still be in progress')
-        // If report not found, check if research is still in progress
-        if (research.status === 'In Progress') {
-          // Poll for report every 2 seconds
-          const pollInterval = setInterval(async () => {
-            const polledData = await getResearchReport(id)
-            if (polledData) {
-              clearInterval(pollInterval)
-              setReport(polledData)
-              setLoading(false)
-            }
-          }, 2000)
-          
-          // Stop polling after 60 seconds
-          setTimeout(() => {
-            clearInterval(pollInterval)
-            setLoading(false)
-          }, 60000)
-          
-          return
-        }
+        setLoading(false)
       }
       
-      setReport(reportData)
-      setLoading(false)
+      // Poll for real-time updates if research is in progress
+      if (research && research.status === 'In Progress') {
+        pollInterval = setInterval(async () => {
+          const polledData = await getResearchReport(id)
+          if (polledData) {
+            const normalized = normalizeReport(polledData)
+            setReport(prevReport => {
+              // Only update if sources count changed or report content changed
+              if (!prevReport) {
+                console.log('🔄 Real-time update: Initial report loaded')
+                return normalized
+              }
+              
+              const prevSourcesCount = prevReport.sources?.length || 0
+              const newSourcesCount = normalized.sources?.length || 0
+              
+              if (newSourcesCount > prevSourcesCount) {
+                console.log('🔄 Real-time update: New sources detected', {
+                  previousCount: prevSourcesCount,
+                  newCount: newSourcesCount,
+                  newSources: normalized.sources.slice(prevSourcesCount)
+                })
+                return normalized
+              }
+              
+              // Also update if other content changed
+              const reportChanged = 
+                prevReport.executiveSummary !== normalized.executiveSummary ||
+                prevReport.detailedAnalysis !== normalized.detailedAnalysis ||
+                (prevReport.keyFindings?.length || 0) !== (normalized.keyFindings?.length || 0)
+              
+              if (reportChanged) {
+                console.log('🔄 Real-time update: Report content updated')
+                return normalized
+              }
+              
+              return prevReport
+            })
+          }
+          
+          // Check if research is still in progress
+          const currentResearch = getResearch(id)
+          if (currentResearch && currentResearch.status !== 'In Progress') {
+            console.log('🔄 Real-time update: Research completed, stopping polling')
+            if (pollInterval) {
+              clearInterval(pollInterval)
+            }
+          }
+        }, 3000) // Poll every 3 seconds for real-time updates
+      }
     }
     
     loadReport()
-  }, [id, research, getResearchReport])
+    
+    // Cleanup interval on unmount or when dependencies change
+    return () => {
+      if (pollInterval) {
+        clearInterval(pollInterval)
+      }
+    }
+  }, [id, research, getResearchReport, getResearch])
 
   if (!research || loading) {
     return (
