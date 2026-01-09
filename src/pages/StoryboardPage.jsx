@@ -18,7 +18,8 @@ import {
   Info,
   Image as ImageIcon,
   Heart,
-  Eye
+  Eye,
+  Presentation
 } from 'lucide-react'
 
 export default function StoryboardPage() {
@@ -175,13 +176,22 @@ export default function StoryboardPage() {
               </p>
             </div>
           </div>
-          <button
-            onClick={() => navigate(`/report/${id}`)}
-            className="text-white/70 hover:text-white hover:bg-white/10 rounded-lg p-2 transition-all duration-200"
-            aria-label="Close"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(`/ppt/${id}`)}
+              className="flex items-center gap-2 px-4 py-2 bg-white text-[#000000] rounded-lg hover:bg-white/90 transition-all duration-200 font-medium text-sm"
+            >
+              <Presentation className="w-4 h-4" />
+              Generate PPT
+            </button>
+            <button
+              onClick={() => navigate(`/report/${id}`)}
+              className="text-white/70 hover:text-white hover:bg-white/10 rounded-lg p-2 transition-all duration-200"
+              aria-label="Close"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
       </div>
 

@@ -11,6 +11,7 @@ import CreateUserDirect from './pages/CreateUserDirect'
 import Dashboard from './pages/Dashboard'
 import StoryboardPage from './pages/StoryboardPage'
 import GenerationPage from './pages/GenerationPage'
+import PPTSlideEditor from './pages/PPTSlideEditor'
 import { ResearchProvider } from './context/ResearchContext'
 import { AuthProvider } from './context/AuthContext'
 import { SidebarProvider, useSidebar } from './context/SidebarContext'
@@ -24,11 +25,12 @@ function LayoutWrapper({ selectedModel, onModelChange }) {
   const { isCollapsed } = useSidebar()
   const location = useLocation()
   
-  // Hide sidebar for ResearchProgress, ReportView, and StoryboardPage pages
+  // Hide sidebar for ResearchProgress, ReportView, StoryboardPage, and PPTSlideEditor pages
   const isProgressPage = location.pathname.startsWith('/progress/')
   const isReportPage = location.pathname.startsWith('/report/')
   const isStoryboardPage = location.pathname.startsWith('/storyboard/')
-  const showSidebar = !isProgressPage && !isReportPage && !isStoryboardPage
+  const isPPTPage = location.pathname.startsWith('/ppt/')
+  const showSidebar = !isProgressPage && !isReportPage && !isStoryboardPage && !isPPTPage
 
   return (
     <div className="flex min-h-screen">
@@ -50,6 +52,7 @@ function LayoutWrapper({ selectedModel, onModelChange }) {
               <Route path="/map/:id" element={<ResearchMap />} />
               <Route path="/chat/:id" element={<FollowUpChat />} />
               <Route path="/storyboard/:id" element={<StoryboardPage />} />
+              <Route path="/ppt/:id" element={<PPTSlideEditor />} />
               <Route path="/generation/:id" element={<GenerationPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
