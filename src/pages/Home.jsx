@@ -788,30 +788,33 @@ ${clarificationsText}
       )}
       
       <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 pt-8">
-        <div className="mb-12 text-center space-y-4">
-          {/* Step Indicator */}
-          <div className="flex items-center justify-center gap-8 mb-8">
-            <div className="flex flex-col items-center">
-              <div className="text-2xl font-bold text-[#000000] mb-1">1</div>
-              <div className="text-sm font-semibold text-[#000000]">DEEP RESEARCH</div>
-              <div className="w-full h-0.5 bg-[#000000] mt-2"></div>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="text-2xl font-bold text-[#666666] mb-1">2</div>
-              <div className="text-sm font-semibold text-[#666666]">STORYBOARDING</div>
-              <div className="w-full h-0.5 bg-[#dddddd] mt-2"></div>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="text-2xl font-bold text-[#666666] mb-1">3</div>
-              <div className="text-sm font-semibold text-[#666666]">DECK GENERATION</div>
-              <div className="w-full h-0.5 bg-[#dddddd] mt-2"></div>
-            </div>
-          </div>
-          <h1 className="text-5xl font-bold text-[#000000] mb-3 tracking-tight leading-tight text-center">Deep Research</h1>
-          <p className="text-[#666666] text-base leading-relaxed max-w-2xl mx-auto text-center">Gather enterprise-level market, client, and industry insights via LLMs.</p>
+        {/* Header - Left aligned for better flow with form below */}
+        <div className="mb-8">
+          <h1 className="text-5xl font-bold text-[#000000] mb-3 tracking-tight leading-tight">Deep Research</h1>
+          <p className="text-[#666666] text-base leading-relaxed max-w-3xl">Gather enterprise-level market, client, and industry insights via LLMs.</p>
         </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-10 border-b border-[#dddddd] mb-12 pb-4 pt-2">
+        {/* Step Indicator */}
+        <div className="flex items-center justify-center gap-8 mb-10">
+          <div className="flex flex-col items-center">
+            <div className="text-2xl font-bold text-[#000000] mb-1">1</div>
+            <div className="text-sm font-semibold text-[#000000]">DEEP RESEARCH</div>
+            <div className="w-full h-0.5 bg-[#000000] mt-2"></div>
+          </div>
+          <div className="flex flex-col items-center">
+            <div className="text-2xl font-bold text-[#666666] mb-1">2</div>
+            <div className="text-sm font-semibold text-[#666666]">STORYBOARDING</div>
+            <div className="w-full h-0.5 bg-[#dddddd] mt-2"></div>
+          </div>
+          <div className="flex flex-col items-center">
+            <div className="text-2xl font-bold text-[#666666] mb-1">3</div>
+            <div className="text-sm font-semibold text-[#666666]">DECK GENERATION</div>
+            <div className="w-full h-0.5 bg-[#dddddd] mt-2"></div>
+          </div>
+        </div>
+
+        {/* Tabs - Left aligned to match content */}
+        <div className="flex flex-wrap items-center gap-10 border-b border-[#dddddd] mb-12 pb-4 pt-2">
             <button
               onClick={() => setActiveTab('new')}
               className={`px-0 py-2.5 text-sm font-medium transition-colors flex items-center gap-2 ${
