@@ -787,49 +787,79 @@ ${clarificationsText}
         />
       )}
       
-      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 pt-8">
-        {/* Header - Left aligned for better flow with form below */}
-        <div className="mb-8">
-          <h1 className="text-5xl font-bold text-[#000000] mb-3 tracking-tight leading-tight">Deep Research</h1>
-          <p className="text-[#666666] text-base leading-relaxed max-w-3xl">Gather enterprise-level market, client, and industry insights via LLMs.</p>
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 pb-12">
+        {/* Header Section with Background */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h1 className="text-3xl font-bold text-[#000000] mb-1.5 tracking-tight">Deep Research</h1>
+              <p className="text-[#666666] text-sm">Gather enterprise-level market, client, and industry insights via LLMs.</p>
+            </div>
+          </div>
+
+          {/* Modern Step Indicator with Progress Bar */}
+          <div className="bg-white rounded-xl p-5 mb-6 border border-gray-200 shadow-sm">
+            <div className="max-w-3xl mx-auto">
+              <div className="flex items-start justify-between relative">
+                {/* Progress Line Background */}
+                <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 rounded-full" style={{left: '8%', right: '8%'}}></div>
+                {/* Progress Line Active */}
+                <div className="absolute top-5 left-0 h-0.5 bg-gradient-to-r from-gray-900 to-black rounded-full transition-all duration-500" style={{width: '8%', left: '8%'}}></div>
+                
+                {/* Step 1 - Active */}
+                <div className="flex flex-col items-center relative z-10 flex-1">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-900 to-black text-white flex items-center justify-center font-bold text-base mb-2.5 shadow-lg ring-3 ring-gray-100 transition-all duration-300">
+                    1
+                  </div>
+                  <div className="text-center">
+                    <span className="block text-xs font-bold text-gray-900 uppercase tracking-wide">Deep Research</span>
+                    <span className="block text-[10px] text-gray-500 mt-0.5">Active</span>
+                  </div>
+                </div>
+                
+                {/* Step 2 - Inactive */}
+                <div className="flex flex-col items-center relative z-10 flex-1">
+                  <div className="w-10 h-10 rounded-full bg-white border-2 border-gray-300 text-gray-400 flex items-center justify-center font-bold text-base mb-2.5 shadow-sm transition-all duration-300 hover:border-gray-400">
+                    2
+                  </div>
+                  <div className="text-center">
+                    <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wide">Storyboarding</span>
+                    <span className="block text-[10px] text-gray-400 mt-0.5">Next</span>
+                  </div>
+                </div>
+                
+                {/* Step 3 - Inactive */}
+                <div className="flex flex-col items-center relative z-10 flex-1">
+                  <div className="w-10 h-10 rounded-full bg-white border-2 border-gray-300 text-gray-400 flex items-center justify-center font-bold text-base mb-2.5 shadow-sm transition-all duration-300 hover:border-gray-400">
+                    3
+                  </div>
+                  <div className="text-center">
+                    <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wide">Deck Generation</span>
+                    <span className="block text-[10px] text-gray-400 mt-0.5">Pending</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Step Indicator */}
-        <div className="flex items-center justify-center gap-8 mb-10">
-          <div className="flex flex-col items-center">
-            <div className="text-2xl font-bold text-[#000000] mb-1">1</div>
-            <div className="text-sm font-semibold text-[#000000]">DEEP RESEARCH</div>
-            <div className="w-full h-0.5 bg-[#000000] mt-2"></div>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="text-2xl font-bold text-[#666666] mb-1">2</div>
-            <div className="text-sm font-semibold text-[#666666]">STORYBOARDING</div>
-            <div className="w-full h-0.5 bg-[#dddddd] mt-2"></div>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="text-2xl font-bold text-[#666666] mb-1">3</div>
-            <div className="text-sm font-semibold text-[#666666]">DECK GENERATION</div>
-            <div className="w-full h-0.5 bg-[#dddddd] mt-2"></div>
-          </div>
-        </div>
-
-        {/* Tabs - Left aligned to match content */}
-        <div className="flex flex-wrap items-center gap-10 border-b border-[#dddddd] mb-12 pb-4 pt-2">
+        {/* Tabs with Pills Design */}
+        <div className="flex items-center gap-3 mb-8 bg-gray-100 rounded-xl p-1.5 w-fit">
             <button
               onClick={() => setActiveTab('new')}
-              className={`px-0 py-2.5 text-sm font-medium transition-colors flex items-center gap-2 ${
+              className={`px-6 py-2.5 text-sm font-semibold rounded-lg transition-all flex items-center gap-2 ${
                 activeTab === 'new'
-                  ? 'text-[#000000] font-bold border-b-2 border-[#000000] pb-2.5 -mb-[3px]'
+                  ? 'bg-white text-[#000000] shadow-sm'
                   : 'text-[#666666] hover:text-[#000000]'
               }`}
             >
-              + New Research
+              <span className="text-lg">+</span> New Research
             </button>
             <button
               onClick={() => setActiveTab('ongoing')}
-              className={`px-0 py-2.5 text-sm font-medium transition-colors flex items-center gap-2 ${
+              className={`px-6 py-2.5 text-sm font-semibold rounded-lg transition-all flex items-center gap-2 ${
                 activeTab === 'ongoing'
-                  ? 'text-[#000000] font-bold border-b-2 border-[#000000] pb-2.5 -mb-[3px]'
+                  ? 'bg-white text-[#000000] shadow-sm'
                   : 'text-[#666666] hover:text-[#000000]'
               }`}
             >
@@ -838,9 +868,9 @@ ${clarificationsText}
             </button>
             <button
               onClick={() => setActiveTab('completed')}
-              className={`px-0 py-2.5 text-sm font-medium transition-colors flex items-center gap-2 ${
+              className={`px-6 py-2.5 text-sm font-semibold rounded-lg transition-all flex items-center gap-2 ${
                 activeTab === 'completed'
-                  ? 'text-[#000000] font-bold border-b-2 border-[#000000] pb-2.5 -mb-[3px]'
+                  ? 'bg-white text-[#000000] shadow-sm'
                   : 'text-[#666666] hover:text-[#000000]'
               }`}
             >
@@ -850,43 +880,41 @@ ${clarificationsText}
           </div>
 
           {activeTab === 'new' && (
-            <div className="space-y-10">
-              <form onSubmit={handleSubmit} className="space-y-8">
-                <div>
-                  <label className="block text-xs font-semibold text-[#666666] mb-3 uppercase tracking-wider">
-                    RESEARCH TOPIC
+            <div className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Research Topic Card */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <label className="flex items-center gap-2 text-sm font-bold text-[#000000] mb-4">
+                    <Search className="w-4 h-4" />
+                    Research Topic
                   </label>
-                  <div>
-                    <textarea
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault()
-                          handleSubmit(e)
-                        }
-                      }}
-                      placeholder="e.g. Impact of solid state batteries on EV market by 2030..."
-                      rows={4}
-                      className="w-full px-6 py-5 text-base border border-[#dddddd] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#000000] focus:ring-offset-0 focus:border-[#000000] text-[#000000] placeholder-[#aaaaaa] bg-white transition-all duration-200 font-normal resize-y min-h-[120px] leading-relaxed"
-                      style={{ 
-                        overflowWrap: 'break-word',
-                        wordWrap: 'break-word',
-                        whiteSpace: 'pre-wrap',
-                        outline: 'none',
-                        boxShadow: 'none'
-                      }}
-                    />
+                  <textarea
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        handleSubmit(e)
+                      }
+                    }}
+                    placeholder="e.g. Impact of solid state batteries on EV market by 2030..."
+                    rows={5}
+                    className="w-full px-5 py-4 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#000000] focus:border-transparent text-[#000000] placeholder-[#aaaaaa] bg-gray-50 transition-all duration-200 font-normal resize-none leading-relaxed hover:border-gray-300"
+                  />
+                  <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
+                    <span>Press Shift + Enter for new line</span>
+                    <span>{query.length} characters</span>
                   </div>
                 </div>
 
-                {/* Upload Documents Section */}
-                <div>
-                  <label className="block text-xs font-semibold text-[#666666] mb-3 uppercase tracking-wider">
-                    UPLOAD DOCUMENTS (OPTIONAL)
+                {/* Upload Documents Card */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <label className="flex items-center gap-2 text-sm font-bold text-[#000000] mb-4">
+                    <Upload className="w-4 h-4" />
+                    Upload Documents <span className="text-xs font-normal text-gray-500 ml-1">(Optional)</span>
                   </label>
                   <label className="block w-full">
-                    <div className="border-2 border-dashed border-[#dddddd] rounded-lg p-12 text-center cursor-pointer hover:border-[#aaaaaa] transition-colors bg-white">
+                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-10 text-center cursor-pointer hover:border-gray-400 hover:bg-gray-50 transition-all bg-gray-50/50">
                       <input
                         type="file"
                         multiple
@@ -896,25 +924,29 @@ ${clarificationsText}
                         disabled={isUploading}
                       />
                       <div className="flex flex-col items-center gap-3">
-                        <Upload className="w-8 h-8 text-[#666666]" />
+                        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                          <Upload className="w-6 h-6 text-gray-500" />
+                        </div>
                         <div className="text-sm text-[#666666]">
-                          <div className="font-medium mb-1">Click to upload or drag and drop</div>
-                          <div className="text-xs">PDF, DOCX, DOC, TXT, MD (Max 50MB per file)</div>
+                          <div className="font-semibold mb-1">Click to upload or drag and drop</div>
+                          <div className="text-xs text-gray-500">PDF, DOCX, DOC, TXT, MD (Max 50MB per file)</div>
                         </div>
                       </div>
                     </div>
                     {uploadedFiles.length > 0 && (
-                      <div className="mt-3 space-y-2">
+                      <div className="mt-4 space-y-2">
                         {uploadedFiles.map((file, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-3 bg-[#f0f0f0] rounded-lg">
-                            <div className="flex items-center gap-2">
-                              <File className="w-4 h-4 text-[#666666]" />
-                              <span className="text-sm text-[#000000]">{file.name}</span>
+                          <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                                <File className="w-4 h-4 text-blue-600" />
+                              </div>
+                              <span className="text-sm font-medium text-[#000000]">{file.name}</span>
                             </div>
                             <button
                               type="button"
                               onClick={() => setUploadedFiles(uploadedFiles.filter((_, i) => i !== idx))}
-                              className="text-[#666666] hover:text-[#000000]"
+                              className="text-gray-400 hover:text-red-600 transition-colors"
                             >
                               <X className="w-4 h-4" />
                             </button>
@@ -925,106 +957,121 @@ ${clarificationsText}
                   </label>
                 </div>
 
-                {/* Target Depth Section */}
-                <div>
-                  <label className="block text-xs font-semibold text-[#666666] mb-3 uppercase tracking-wider">
-                    TARGET DEPTH
+                {/* Configuration Card */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <label className="flex items-center gap-2 text-sm font-bold text-[#000000] mb-4">
+                    <Cpu className="w-4 h-4" />
+                    Research Configuration
                   </label>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setDepth('light')}
-                      className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all ${
-                        depth === 'light'
-                          ? 'bg-[#000000] text-white'
-                          : 'bg-[#f0f0f0] text-[#666666] hover:bg-[#e0e0e0]'
-                      }`}
-                    >
-                      Light
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDepth('standard')}
-                      className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all ${
-                        depth === 'standard'
-                          ? 'bg-[#000000] text-white'
-                          : 'bg-[#f0f0f0] text-[#666666] hover:bg-[#e0e0e0]'
-                      }`}
-                    >
-                      Standard
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDepth('deep')}
-                      className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all ${
-                        depth === 'deep'
-                          ? 'bg-[#000000] text-white'
-                          : 'bg-[#f0f0f0] text-[#666666] hover:bg-[#e0e0e0]'
-                      }`}
-                    >
-                      Deep
-                    </button>
+                  
+                  {/* Target Depth */}
+                  <div className="mb-6">
+                    <label className="block text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wider">
+                      Target Depth
+                    </label>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setDepth('light')}
+                        className={`flex-1 px-6 py-3 rounded-xl text-sm font-semibold transition-all ${
+                          depth === 'light'
+                            ? 'bg-[#000000] text-white shadow-md'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        Light
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDepth('standard')}
+                        className={`flex-1 px-6 py-3 rounded-xl text-sm font-semibold transition-all ${
+                          depth === 'standard'
+                            ? 'bg-[#000000] text-white shadow-md'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        Standard
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDepth('deep')}
+                        className={`flex-1 px-6 py-3 rounded-xl text-sm font-semibold transition-all ${
+                          depth === 'deep'
+                            ? 'bg-[#000000] text-white shadow-md'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        Deep
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                {/* AI Model Section */}
-                <div className="flex items-end gap-4">
-                  <div className="flex-1">
-                    <label className="block text-xs font-semibold text-[#666666] mb-3 uppercase tracking-wider">
-                      AI MODEL
+                  {/* AI Model */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wider">
+                      AI Model
                     </label>
                     <div className="relative">
                       <select
                         value={model}
                         onChange={(e) => setModel(e.target.value)}
-                        className="w-full px-6 py-3 text-base border border-[#dddddd] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#000000] focus:ring-offset-0 focus:border-[#000000] text-[#000000] bg-white appearance-none cursor-pointer"
+                        className="w-full px-5 py-3 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#000000] focus:border-transparent text-[#000000] bg-gray-50 appearance-none cursor-pointer hover:border-gray-300 transition-all"
                       >
                         <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                         <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
                       </select>
-                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#666666] pointer-events-none" />
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                     </div>
                   </div>
-                  <button
-                    type="submit"
-                    disabled={isClarifying || !query.trim()}
-                    className={`px-8 py-3.5 text-white rounded-lg font-semibold transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${
-                      isClarifying 
-                        ? 'bg-[#000000] hover:opacity-90' 
-                        : 'bg-[#000000] hover:opacity-90'
-                    }`}
-                  >
-                    {isClarifying ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin text-white" />
-                          Initializing...
-                        </>
-                      ) : (
-                        <>
-                          Initialize Research Agent
-                          <ArrowRight className="w-5 h-5" />
-                        </>
-                      )}
-                    </button>
                 </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={isClarifying || !query.trim()}
+                  className={`w-full px-8 py-4 text-white rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg hover:shadow-xl ${
+                    isClarifying 
+                      ? 'bg-[#000000]' 
+                      : 'bg-gradient-to-r from-gray-900 to-black hover:from-black hover:to-gray-900'
+                  }`}
+                >
+                  {isClarifying ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin text-white" />
+                        <span>Initializing Research Agent...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Search className="w-5 h-5" />
+                        <span>Initialize Research Agent</span>
+                        <ArrowRight className="w-5 h-5" />
+                      </>
+                    )}
+                </button>
               </form>
 
               {/* Feature Cards */}
-              <div className="grid grid-cols-3 gap-6 mt-12">
-                <div className="bg-white border border-[#dddddd] rounded-lg p-6">
-                  <BarChart3 className="w-8 h-8 text-[#000000] mb-4" />
-                  <h3 className="text-lg font-bold text-[#000000] mb-2">Market Landscape</h3>
-                  <p className="text-sm text-[#666666]">Analyze market trends and opportunities</p>
+              <div className="grid grid-cols-3 gap-6 mt-8">
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                  <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center mb-4">
+                    <BarChart3 className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Market Landscape</h3>
+                  <p className="text-sm text-gray-600">Analyze market trends and opportunities with comprehensive data</p>
                 </div>
-                <div className="bg-white border border-[#dddddd] rounded-lg p-6">
-                  <Users className="w-8 h-8 text-[#000000] mb-4" />
-                  <h3 className="text-lg font-bold text-[#000000] mb-2">Competitor Intel</h3>
-                  <p className="text-sm text-[#666666]">Track competitor strategies and positioning</p>
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                  <div className="w-12 h-12 rounded-xl bg-purple-600 flex items-center justify-center mb-4">
+                    <Users className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Competitor Intel</h3>
+                  <p className="text-sm text-gray-600">Track competitor strategies and market positioning</p>
                 </div>
-                <div className="bg-white border border-[#dddddd] rounded-lg p-6">
-                  <Cpu className="w-8 h-8 text-[#000000] mb-4" />
-                  <h3 className="text-lg font-bold text-[#000000] mb-2">Tech Deep Dive</h3>
-                  <p className="text-sm text-[#666666]">Explore technical innovations and capabilities</p>
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                  <div className="w-12 h-12 rounded-xl bg-green-600 flex items-center justify-center mb-4">
+                    <Cpu className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Tech Deep Dive</h3>
+                  <p className="text-sm text-gray-600">Explore technical innovations and capabilities in depth</p>
                 </div>
               </div>
             </div>
