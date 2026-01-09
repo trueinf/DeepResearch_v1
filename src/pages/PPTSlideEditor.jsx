@@ -396,94 +396,150 @@ export default function PPTSlideEditor() {
   }
 
   const handleDownload = async () => {
-    const pptx = new pptxgen()
-    pptx.layout = 'LAYOUT_WIDE'
-    pptx.defineLayout({ name: 'CUSTOM', width: SLIDE_WIDTH, height: SLIDE_HEIGHT })
-    pptx.layout = 'CUSTOM'
-
-    slides.forEach((slide, index) => {
-      const pptSlide = pptx.addSlide()
-      
-      // Set background color
-      pptSlide.background = { color: hexToRgb(slide.backgroundColor) }
-      
-      // Title slide
-      if (slide.type === 'title') {
-        pptSlide.addText(slide.title, {
-          x: 0.5,
-          y: 2,
-          w: 9,
-          h: 2,
-          fontSize: slideSettings.titleSize,
-          fontFace: slideSettings.fontFamily,
-          color: hexToRgb(slide.titleColor),
-          align: slideSettings.titleAlign,
-          bold: true
-        })
-        if (slide.subtitle) {
-          pptSlide.addText(slide.subtitle, {
-            x: 0.5,
-            y: 4.5,
-            w: 9,
-            h: 1,
-            fontSize: slideSettings.bodySize,
-            fontFace: slideSettings.fontFamily,
-            color: hexToRgb(slide.textColor),
-            align: slideSettings.titleAlign
-          })
-        }
-      } else {
-        // Content slide
-        pptSlide.addText(slide.title, {
-          x: 0.5,
-          y: 0.5,
-          w: 9,
-          h: 1,
-          fontSize: slideSettings.titleSize,
-          fontFace: slideSettings.fontFamily,
-          color: hexToRgb(slide.titleColor),
-          align: slideSettings.titleAlign,
-          bold: true
-        })
-        if (slide.subtitle) {
-          pptSlide.addText(slide.subtitle, {
-            x: 0.5,
-            y: 1.6,
-            w: 9,
-            h: 0.6,
-            fontSize: slideSettings.bodySize - 4,
-            fontFace: slideSettings.fontFamily,
-            color: hexToRgb(slide.textColor),
-            align: slideSettings.titleAlign,
-            italic: true
-          })
-        }
-        pptSlide.addText(slide.content, {
-          x: 0.5,
-          y: 2.5,
-          w: 9,
-          h: 4.5,
-          fontSize: slideSettings.bodySize,
-          fontFace: slideSettings.fontFamily,
-          color: hexToRgb(slide.textColor),
-          align: slideSettings.bodyAlign,
-          valign: 'top',
-          bullet: slide.content.includes('•')
-        })
+    try {
+      if (!slides || slides.length === 0) {
+        alert('No slides to download. Please generate slides first.')
+        return
       }
-    })
 
-    const fileName = `presentation-${Date.now()}.pptx`
-    await pptx.writeFile({ fileName })
+      console.log('Starting PPT download...', { slideCount: slides.length })
+      
+      const pptx = new pptxgen()
+      pptx.layout = 'LAYOUT_WIDE'
+      pptx.defineLayout({ name: 'CUSTOM', width: SLIDE_WIDTH, height: SLIDE_HEIGHT })
+      pptx.layout = 'CUSTOM'
+
+      // Set presentation properties
+      pptx.author = 'AskDepth Research'
+      pptx.company = 'AskDepth'
+      pptx.title = slides[0]?.title || 'Research Presentation'
+
+      slides.forEach((slide, index) => {
+        try {
+          const pptSlide = pptx.addSlide()
+          
+          // Set background color
+          const bgColor = hexToRgb(slide.backgroundColor || slideSettings.backgroundColor)
+          pptSlide.background = { color: bgColor }
+          
+          // Title slide
+          if (slide.type === 'title') {
+            pptSlide.addText(slide.title || 'Untitled', {
+              x: 0.5,
+              y: 2,
+              w: 9,
+              h: 2,
+              fontSize: slideSettings.titleSize,
+              fontFace: slideSettings.fontFamily,
+              color: hexToRgb(slide.titleColor || slideSettings.titleColor),
+              align: slideSettings.titleAlign,
+              bold: true
+            })
+            if (slide.subtitle) {
+              pptSlide.addText(slide.subtitle, {
+                x: 0.5,
+                y: 4.5,
+                w: 9,
+                h: 1,
+                fontSize: slideSettings.bodySize,
+                fontFace: slideSettings.fontFamily,
+                color: hexToRgb(slide.textColor || slideSettings.textColor),
+                align: slideSettings.titleAlign
+              })
+            }
+          } else {
+            // Content slide
+            pptSlide.addText(slide.title || 'Untitled', {
+              x: 0.5,
+              y: 0.5,
+              w: 9,
+              h: 1,
+              fontSize: slideSettings.titleSize,
+              fontFace: slideSettings.fontFamily,
+              color: hexToRgb(slide.titleColor || slideSettings.titleColor),
+              align: slideSettings.titleAlign,
+              bold: true
+            })
+            if (slide.subtitle) {
+              pptSlide.addText(slide.subtitle, {
+                x: 0.5,
+                y: 1.6,
+                w: 9,
+                h: 0.6,
+                fontSize: Math.max(12, slideSettings.bodySize - 4),
+                fontFace: slideSettings.fontFamily,
+                color: hexToRgb(slide.textColor || slideSettings.textColor),
+                align: slideSettings.titleAlign,
+                italic: true
+              })
+            }
+            
+            // Split content into lines for better formatting
+            const content = slide.content || ''
+            const lines = content.split('\n').filter(line => line.trim().length > 0)
+            
+            if (lines.length > 0) {
+              // Check if content has bullets
+              const hasBullets = content.includes('•') || content.includes('-')
+              
+              pptSlide.addText(content, {
+                x: 0.5,
+                y: slide.subtitle ? 2.5 : 2,
+                w: 9,
+                h: slide.subtitle ? 4.5 : 5,
+                fontSize: slideSettings.bodySize,
+                fontFace: slideSettings.fontFamily,
+                color: hexToRgb(slide.textColor || slideSettings.textColor),
+                align: slideSettings.bodyAlign,
+                valign: 'top',
+                bullet: hasBullets,
+                autoFit: true
+              })
+            }
+          }
+        } catch (slideError) {
+          console.error(`Error creating slide ${index + 1}:`, slideError)
+          // Continue with next slide even if one fails
+        }
+      })
+
+      const fileName = `presentation-${Date.now()}.pptx`
+      console.log('Writing PPT file...', { fileName, slideCount: slides.length })
+      
+      await pptx.writeFile({ fileName })
+      
+      console.log('PPT file downloaded successfully:', fileName)
+    } catch (error) {
+      console.error('Error downloading PPT:', error)
+      alert(`Failed to download PPT: ${error.message || 'Unknown error'}. Please check the browser console for details.`)
+    }
   }
 
   const hexToRgb = (hex) => {
+    if (!hex || typeof hex !== 'string') {
+      return { r: 255, g: 255, b: 255 } // Default to white
+    }
+    
+    // Remove any whitespace
+    hex = hex.trim()
+    
+    // If it doesn't start with #, add it
+    if (!hex.startsWith('#')) {
+      hex = '#' + hex
+    }
+    
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-    return result ? {
-      r: parseInt(result[1], 16),
-      g: parseInt(result[2], 16),
-      b: parseInt(result[3], 16)
-    } : { r: 0, g: 0, b: 0 }
+    if (result) {
+      return {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      }
+    }
+    
+    // Fallback to white if parsing fails
+    console.warn('Invalid hex color:', hex, 'defaulting to white')
+    return { r: 255, g: 255, b: 255 }
   }
 
   const selectedSlide = slides[selectedSlideIndex]
