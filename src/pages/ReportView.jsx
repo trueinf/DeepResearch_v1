@@ -4458,6 +4458,7 @@ ${report.conclusion || ''}
     {showStoryboard && (
       <StoryboardView
         storyboard={storyboard}
+        researchId={id}
         onClose={() => {
           setShowStoryboard(false)
           setStoryboard(null)

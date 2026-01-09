@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { 
   Film, 
   Lightbulb, 
@@ -14,10 +15,14 @@ import {
   ExternalLink,
   Sparkles,
   ArrowRight,
-  Info
+  Info,
+  Presentation
 } from 'lucide-react'
 
-export default function StoryboardView({ storyboard, onClose }) {
+export default function StoryboardView({ storyboard, onClose, researchId }) {
+  const navigate = useNavigate()
+  const params = useParams()
+  const id = researchId || params?.id
   const [expandedBuckets, setExpandedBuckets] = useState({})
   const [expandedClaims, setExpandedClaims] = useState({})
   const [expandedScenes, setExpandedScenes] = useState({})
@@ -128,12 +133,26 @@ export default function StoryboardView({ storyboard, onClose }) {
                 </p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="text-white/70 hover:text-white hover:bg-white/10 rounded-lg p-2 transition-colors"
-            >
-              ✕
-            </button>
+            <div className="flex items-center gap-3">
+              {id && (
+                <button
+                  onClick={() => {
+                    onClose()
+                    navigate(`/ppt/${id}`)
+                  }}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-white text-[#000000] rounded-lg hover:bg-white/90 transition-all duration-200 font-semibold text-sm shadow-sm"
+                >
+                  <Presentation className="w-5 h-5" />
+                  Generate PPT
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="text-white/70 hover:text-white hover:bg-white/10 rounded-lg p-2 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
           </div>
         </div>
 
