@@ -514,10 +514,10 @@ RETURN ONLY THE JSON OBJECT ABOVE - NO OTHER TEXT, NO MARKDOWN, NO EXPLANATIONS.
     if (data.candidates && Array.isArray(data.candidates) && data.candidates.length > 0) {
       const candidate = data.candidates[0]
       if (candidate.content && candidate.content.parts && Array.isArray(candidate.content.parts)) {
-        responseText = candidate.content.parts
-          .filter((part: any) => part.text)
-          .map((part: any) => part.text)
-          .join('\n')
+        const textParts = candidate.content.parts
+          .filter((part: any) => part && part.text)
+          .map((part: any) => String(part.text))
+        responseText = textParts.join('\n')
       }
     }
 
@@ -541,11 +541,32 @@ RETURN ONLY THE JSON OBJECT ABOVE - NO OTHER TEXT, NO MARKDOWN, NO EXPLANATIONS.
       )
     }
 
+    if (!responseText || typeof responseText !== 'string') {
+      console.error('Invalid responseText type:', typeof responseText, responseText)
+      return new Response(
+        JSON.stringify({ 
+          status: 'error',
+          error: 'Invalid response from AI. The response format is not recognized.',
+          details: {
+            responseType: typeof responseText,
+            hasResponse: !!responseText
+          }
+        }),
+        { 
+          status: 200,
+          headers: { 
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          } 
+        }
+      )
+    }
+
     console.log('Raw response text length:', responseText.length)
     console.log('Response text preview (first 500 chars):', responseText.substring(0, 500))
 
     // Parse JSON response - handle multiple formats with improved extraction
-    let jsonText = responseText.trim()
+    let jsonText = String(responseText).trim()
     
     // Remove markdown code blocks if present (handle various formats)
     jsonText = jsonText
@@ -593,16 +614,13 @@ RETURN ONLY THE JSON OBJECT ABOVE - NO OTHER TEXT, NO MARKDOWN, NO EXPLANATIONS.
       // Try multiple parsing strategies
       let parsed = false
       
-      // Strategy 1: Try to fix common JSON issues and re-parse
+      // Strategy 1: Try line-based extraction to find valid JSON
       try {
-        // Fix unescaped quotes in strings (basic attempt)
-        let fixedJson = jsonText
-          // Try to balance quotes (very basic)
-          .replace(/([^\\])"/g, '$1\\"')
-          .replace(/^"/, '\\"')
-          .replace(/"$/, '\\"')
+        // Find the largest valid JSON object using line-by-line analysis
+        if (!responseText || responseText.length === 0) {
+          throw new Error('Response text is empty')
+        }
         
-        // Actually, let's try a different approach - find the largest valid JSON object
         const lines = responseText.split('\n')
         let jsonStart = -1
         let jsonEnd = -1
@@ -634,7 +652,7 @@ RETURN ONLY THE JSON OBJECT ABOVE - NO OTHER TEXT, NO MARKDOWN, NO EXPLANATIONS.
       }
       
       // Strategy 2: Try to extract JSON using balanced braces
-      if (!parsed) {
+      if (!parsed && responseText && responseText.length > 0) {
         try {
           let startIdx = responseText.indexOf('{')
           let endIdx = responseText.lastIndexOf('}')
@@ -668,19 +686,23 @@ RETURN ONLY THE JSON OBJECT ABOVE - NO OTHER TEXT, NO MARKDOWN, NO EXPLANATIONS.
       }
       
       // Strategy 3: Last resort - try to fix and parse
-      if (!parsed) {
+      if (!parsed && responseText && responseText.length > 0) {
         try {
-          // Remove everything before first { and after last }
-          const cleanJson = responseText.substring(
-            responseText.indexOf('{'),
-            responseText.lastIndexOf('}') + 1
-          )
-          // Try to fix trailing commas
-          const fixedJson = cleanJson.replace(/,(\s*[}\]])/g, '$1')
-          console.log('Trying final cleanup attempt (length:', fixedJson.length, ')')
-          storyboardResponse = JSON.parse(fixedJson)
-          parsed = true
-          console.log('Successfully parsed after final cleanup')
+          const firstBrace = responseText.indexOf('{')
+          const lastBrace = responseText.lastIndexOf('}')
+          
+          if (firstBrace >= 0 && lastBrace > firstBrace) {
+            // Remove everything before first { and after last }
+            const cleanJson = responseText.substring(firstBrace, lastBrace + 1)
+            // Try to fix trailing commas
+            const fixedJson = cleanJson.replace(/,(\s*[}\]])/g, '$1')
+            console.log('Trying final cleanup attempt (length:', fixedJson.length, ')')
+            storyboardResponse = JSON.parse(fixedJson)
+            parsed = true
+            console.log('Successfully parsed after final cleanup')
+          } else {
+            console.log('Strategy 3: Could not find valid JSON boundaries')
+          }
         } catch (finalParseError) {
           console.log('Final cleanup attempt failed:', finalParseError)
         }
