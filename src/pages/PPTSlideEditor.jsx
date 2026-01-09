@@ -69,9 +69,64 @@ export default function PPTSlideEditor() {
         }
 
         const report = await getResearchReport(id)
+        if (!report) {
+          console.log('No report found')
+          setLoading(false)
+          return
+        }
+
+        // Check if storyboard exists in report
         if (report?.storyboard) {
+          console.log('Found storyboard in report')
           setStoryboard(report.storyboard)
           generateSlidesFromStoryboard(report.storyboard)
+          setLoading(false)
+          return
+        }
+
+        // If no storyboard, generate it from report data
+        console.log('No storyboard found, generating from report data...')
+        try {
+          const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+          const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+          const response = await fetch(`${SUPABASE_URL}/functions/v1/generate-storyboard`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({
+              report: {
+                topic: research?.topic || report.topic,
+                executiveSummary: report.executiveSummary,
+                detailedAnalysis: report.detailedAnalysis,
+                keyFindings: report.keyFindings,
+                insights: report.insights,
+                conclusion: report.conclusion,
+                sources: report.sources
+              },
+              storySpine: 'problem-insight-resolution',
+              audience: 'general'
+            }),
+          })
+
+          const responseText = await response.text()
+          const data = responseText ? JSON.parse(responseText) : null
+
+          if (data && data.status === 'success' && data.storyboard) {
+            console.log('Storyboard generated successfully')
+            setStoryboard(data.storyboard)
+            generateSlidesFromStoryboard(data.storyboard)
+          } else {
+            console.error('Failed to generate storyboard:', data?.error || 'Unknown error')
+            // Fallback: generate slides directly from report data
+            generateSlidesFromReport(report)
+          }
+        } catch (genError) {
+          console.error('Error generating storyboard:', genError)
+          // Fallback: generate slides directly from report data
+          generateSlidesFromReport(report)
         }
       } catch (error) {
         console.error('Error loading storyboard:', error)
@@ -161,6 +216,118 @@ export default function PPTSlideEditor() {
 
     setSlides(generatedSlides)
     setSelectedSlideIndex(0)
+  }
+
+  const generateSlidesFromReport = (report) => {
+    const generatedSlides = []
+
+    // Title slide
+    generatedSlides.push({
+      id: 'title',
+      type: 'title',
+      title: report.topic || 'Research Presentation',
+      subtitle: report.executiveSummary ? report.executiveSummary.substring(0, 100) + '...' : '',
+      content: '',
+      backgroundColor: slideSettings.backgroundColor,
+      titleColor: slideSettings.titleColor,
+      textColor: slideSettings.textColor
+    })
+
+    // Executive Summary slide
+    if (report.executiveSummary) {
+      generatedSlides.push({
+        id: 'executive-summary',
+        type: 'content',
+        title: 'Executive Summary',
+        subtitle: '',
+        content: report.executiveSummary,
+        backgroundColor: slideSettings.backgroundColor,
+        titleColor: slideSettings.titleColor,
+        textColor: slideSettings.textColor
+      })
+    }
+
+    // Key Findings slides
+    if (report.keyFindings && report.keyFindings.length > 0) {
+      report.keyFindings.forEach((finding, idx) => {
+        generatedSlides.push({
+          id: `finding-${idx}`,
+          type: 'content',
+          title: `Key Finding ${idx + 1}`,
+          subtitle: '',
+          content: typeof finding === 'string' ? finding : finding.text || '',
+          backgroundColor: slideSettings.backgroundColor,
+          titleColor: slideSettings.titleColor,
+          textColor: slideSettings.textColor
+        })
+      })
+    }
+
+    // Insights slide
+    if (report.insights) {
+      generatedSlides.push({
+        id: 'insights',
+        type: 'content',
+        title: 'Key Insights',
+        subtitle: '',
+        content: report.insights,
+        backgroundColor: slideSettings.backgroundColor,
+        titleColor: slideSettings.titleColor,
+        textColor: slideSettings.textColor
+      })
+    }
+
+    // Detailed Analysis slide (truncated if too long)
+    if (report.detailedAnalysis) {
+      const analysis = report.detailedAnalysis.length > 1000 
+        ? report.detailedAnalysis.substring(0, 1000) + '...'
+        : report.detailedAnalysis
+      generatedSlides.push({
+        id: 'analysis',
+        type: 'content',
+        title: 'Detailed Analysis',
+        subtitle: '',
+        content: analysis,
+        backgroundColor: slideSettings.backgroundColor,
+        titleColor: slideSettings.titleColor,
+        textColor: slideSettings.textColor
+      })
+    }
+
+    // Conclusion slide
+    if (report.conclusion) {
+      generatedSlides.push({
+        id: 'conclusion',
+        type: 'content',
+        title: 'Conclusion',
+        subtitle: '',
+        content: report.conclusion,
+        backgroundColor: slideSettings.backgroundColor,
+        titleColor: slideSettings.titleColor,
+        textColor: slideSettings.textColor
+      })
+    }
+
+    // Sources slide
+    if (report.sources && report.sources.length > 0) {
+      generatedSlides.push({
+        id: 'sources',
+        type: 'content',
+        title: 'Sources & References',
+        subtitle: '',
+        content: report.sources.slice(0, 10).map((s, i) => {
+          const source = typeof s === 'string' ? { url: s, title: s } : s
+          return `${i + 1}. ${source.title || source.domain || source.url || 'Source'}`
+        }).join('\n'),
+        backgroundColor: slideSettings.backgroundColor,
+        titleColor: slideSettings.titleColor,
+        textColor: slideSettings.textColor
+      })
+    }
+
+    setSlides(generatedSlides)
+    setSelectedSlideIndex(0)
+    console.log('Generated slides from report data:', generatedSlides.length)
   }
 
   const getStorySpineLabel = (spine) => {
