@@ -142,15 +142,15 @@ serve(async (req) => {
     }
     
     if (report.detailedAnalysis) {
-      reportContext += `DETAILED ANALYSIS:\n${report.detailedAnalysis.substring(0, 3000)}\n\n`
+      reportContext += `DETAILED ANALYSIS:\n${String(report.detailedAnalysis).substring(0, 3000)}\n\n`
     }
     
     if (report.insights) {
-      reportContext += `INSIGHTS:\n${report.insights.substring(0, 1500)}\n\n`
+      reportContext += `INSIGHTS:\n${String(report.insights).substring(0, 1500)}\n\n`
     }
     
     if (report.conclusion) {
-      reportContext += `CONCLUSION:\n${report.conclusion.substring(0, 1500)}\n\n`
+      reportContext += `CONCLUSION:\n${String(report.conclusion).substring(0, 1500)}\n\n`
     }
 
     // Storyboard Generation Agent Prompt - 7-Step Process
@@ -320,15 +320,27 @@ CRITICAL RULES:
 7. Organize frames in logical sequence following the story spine
 8. Include supporting evidence for frames but keep frames focused
 
-CRITICAL: You MUST return ONLY valid JSON. Do NOT include:
-- Markdown code blocks (no code fences or markdown formatting)
-- Explanatory text before or after the JSON
-- Comments or notes
-- Any text outside the JSON object
+CRITICAL JSON OUTPUT REQUIREMENTS:
+1. You MUST return ONLY valid JSON - nothing else
+2. Do NOT include markdown code blocks (no code fences)
+3. Do NOT include any explanatory text before or after the JSON
+4. Do NOT include comments, notes, or descriptions
+5. Start your response with { and end with }
+6. The entire response must be parseable as JSON
+7. If you cannot generate valid JSON, return an error object: {"error": "Unable to generate storyboard"}
 
-Start your response with { and end with }. Return ONLY the JSON object, nothing else.
+EXAMPLE OF CORRECT FORMAT:
+{
+  "controllingInsight": "...",
+  "storySpine": "problem-insight-resolution",
+  "insightBuckets": [...],
+  "storyClaims": [...],
+  "sceneGroups": [...],
+  "frames": [...],
+  "remainingResearch": {...}
+}
 
-RETURN ONLY VALID JSON - no markdown, no code blocks, no explanations, just the JSON object.`
+RETURN ONLY THE JSON OBJECT ABOVE - NO OTHER TEXT, NO MARKDOWN, NO EXPLANATIONS.`
 
     // Try multiple model names in order of preference (Gemini 2.5 models)
     const modelNames = [
@@ -532,48 +544,149 @@ RETURN ONLY VALID JSON - no markdown, no code blocks, no explanations, just the 
     console.log('Raw response text length:', responseText.length)
     console.log('Response text preview (first 500 chars):', responseText.substring(0, 500))
 
-    // Parse JSON response - handle multiple formats
+    // Parse JSON response - handle multiple formats with improved extraction
     let jsonText = responseText.trim()
     
-    // Remove markdown code blocks if present
-    jsonText = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+    // Remove markdown code blocks if present (handle various formats)
+    jsonText = jsonText
+      .replace(/^```json\s*/gm, '')
+      .replace(/^```\s*/gm, '')
+      .replace(/```\s*$/gm, '')
+      .replace(/```json\s*/g, '')
+      .replace(/```\s*/g, '')
+      .trim()
     
-    // Try to extract JSON object (handle cases where there's text before/after)
-    let jsonMatch = jsonText.match(/\{[\s\S]*\}/)
-    if (jsonMatch) {
-      jsonText = jsonMatch[0]
+    // Remove any leading/trailing text that's not JSON
+    // Find the first { and last } to extract the JSON object
+    const firstBrace = jsonText.indexOf('{')
+    const lastBrace = jsonText.lastIndexOf('}')
+    
+    if (firstBrace >= 0 && lastBrace > firstBrace) {
+      jsonText = jsonText.substring(firstBrace, lastBrace + 1)
     } else {
-      // If no JSON object found, try to find it by looking for first { and last }
-      const firstBrace = jsonText.indexOf('{')
-      const lastBrace = jsonText.lastIndexOf('}')
-      if (firstBrace >= 0 && lastBrace > firstBrace) {
-        jsonText = jsonText.substring(firstBrace, lastBrace + 1)
+      // Try to find JSON using regex as fallback
+      const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        jsonText = jsonMatch[0]
       }
     }
 
-    let storyboardResponse: StoryboardResponse
+    // Clean up common JSON issues
+    jsonText = jsonText
+      // Remove any trailing commas before closing braces/brackets
+      .replace(/,(\s*[}\]])/g, '$1')
+      // Remove comments if any (though JSON shouldn't have them)
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*$/gm, '')
+      .trim()
+
+    let storyboardResponse: StoryboardResponse | null = null
     try {
       storyboardResponse = JSON.parse(jsonText)
     } catch (parseError: any) {
       console.error('JSON parse error:', parseError)
-      console.error('Attempted to parse:', jsonText.substring(0, 1000))
+      console.error('Parse error message:', parseError?.message)
+      console.error('Attempted to parse (first 1000 chars):', jsonText.substring(0, 1000))
       console.error('Full response text length:', responseText.length)
       console.error('Full response text:', responseText)
       
-      // Try a more aggressive extraction
+      // Try multiple parsing strategies
+      let parsed = false
+      
+      // Strategy 1: Try to fix common JSON issues and re-parse
       try {
-        // Look for the main JSON object boundaries more carefully
-        const startIdx = responseText.indexOf('{')
-        const lastIdx = responseText.lastIndexOf('}')
-        if (startIdx >= 0 && lastIdx > startIdx) {
-          const extractedJson = responseText.substring(startIdx, lastIdx + 1)
-          console.log('Trying extracted JSON (length:', extractedJson.length, ')')
-          storyboardResponse = JSON.parse(extractedJson)
-          console.log('Successfully parsed after extraction')
-        } else {
-          throw new Error('Could not find JSON object boundaries')
+        // Fix unescaped quotes in strings (basic attempt)
+        let fixedJson = jsonText
+          // Try to balance quotes (very basic)
+          .replace(/([^\\])"/g, '$1\\"')
+          .replace(/^"/, '\\"')
+          .replace(/"$/, '\\"')
+        
+        // Actually, let's try a different approach - find the largest valid JSON object
+        const lines = responseText.split('\n')
+        let jsonStart = -1
+        let jsonEnd = -1
+        let braceCount = 0
+        
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i]
+          if (jsonStart === -1 && line.includes('{')) {
+            jsonStart = i
+            braceCount = (line.match(/\{/g) || []).length - (line.match(/\}/g) || []).length
+          } else if (jsonStart >= 0) {
+            braceCount += (line.match(/\{/g) || []).length - (line.match(/\}/g) || []).length
+            if (braceCount === 0) {
+              jsonEnd = i
+              break
+            }
+          }
         }
-      } catch (secondParseError) {
+        
+        if (jsonStart >= 0 && jsonEnd >= jsonStart) {
+          const extractedJson = lines.slice(jsonStart, jsonEnd + 1).join('\n')
+          console.log('Trying line-based extraction (length:', extractedJson.length, ')')
+          storyboardResponse = JSON.parse(extractedJson)
+          parsed = true
+          console.log('Successfully parsed after line-based extraction')
+        }
+      } catch (lineParseError) {
+        console.log('Line-based extraction failed:', lineParseError)
+      }
+      
+      // Strategy 2: Try to extract JSON using balanced braces
+      if (!parsed) {
+        try {
+          let startIdx = responseText.indexOf('{')
+          let endIdx = responseText.lastIndexOf('}')
+          
+          if (startIdx >= 0 && endIdx > startIdx) {
+            let braceBalance = 0
+            let validEndIdx = -1
+            
+            for (let i = startIdx; i <= endIdx; i++) {
+              if (responseText[i] === '{') braceBalance++
+              if (responseText[i] === '}') {
+                braceBalance--
+                if (braceBalance === 0) {
+                  validEndIdx = i
+                  break
+                }
+              }
+            }
+            
+            if (validEndIdx > startIdx) {
+              const balancedJson = responseText.substring(startIdx, validEndIdx + 1)
+              console.log('Trying balanced brace extraction (length:', balancedJson.length, ')')
+              storyboardResponse = JSON.parse(balancedJson)
+              parsed = true
+              console.log('Successfully parsed after balanced brace extraction')
+            }
+          }
+        } catch (balancedParseError) {
+          console.log('Balanced brace extraction failed:', balancedParseError)
+        }
+      }
+      
+      // Strategy 3: Last resort - try to fix and parse
+      if (!parsed) {
+        try {
+          // Remove everything before first { and after last }
+          const cleanJson = responseText.substring(
+            responseText.indexOf('{'),
+            responseText.lastIndexOf('}') + 1
+          )
+          // Try to fix trailing commas
+          const fixedJson = cleanJson.replace(/,(\s*[}\]])/g, '$1')
+          console.log('Trying final cleanup attempt (length:', fixedJson.length, ')')
+          storyboardResponse = JSON.parse(fixedJson)
+          parsed = true
+          console.log('Successfully parsed after final cleanup')
+        } catch (finalParseError) {
+          console.log('Final cleanup attempt failed:', finalParseError)
+        }
+      }
+      
+      if (!parsed) {
         return new Response(
           JSON.stringify({ 
             status: 'error',
@@ -583,7 +696,7 @@ RETURN ONLY VALID JSON - no markdown, no code blocks, no explanations, just the 
               responsePreview: responseText.substring(0, 500),
               responseLength: responseText.length,
               attemptedJson: jsonText.substring(0, 500),
-              suggestion: 'The AI may have returned text instead of JSON. Check function logs for the full response. Try regenerating with a simpler research report.'
+              suggestion: 'The AI may have returned text instead of JSON. Check function logs for the full response. Try regenerating with a simpler research report or check if the Gemini API key has proper access.'
             }
           }),
           { 
@@ -597,10 +710,31 @@ RETURN ONLY VALID JSON - no markdown, no code blocks, no explanations, just the 
       }
     }
 
-    // Validate response structure
-    if (!storyboardResponse.controllingInsight) {
+    // Ensure storyboardResponse is not null
+    if (!storyboardResponse) {
+      return new Response(
+        JSON.stringify({ 
+          status: 'error',
+          error: 'Failed to parse storyboard response. The response structure is invalid.',
+          details: {
+            responsePreview: responseText.substring(0, 500),
+            responseLength: responseText.length
+          }
+        }),
+        { 
+          status: 200,
+          headers: { 
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          } 
+        }
+      )
+    }
+
+    // Validate response structure (storyboardResponse is guaranteed to be non-null here)
+    if (!storyboardResponse!.controllingInsight) {
       console.error('Validation error: controlling insight missing')
-      console.error('Response structure:', Object.keys(storyboardResponse))
+      console.error('Response structure:', Object.keys(storyboardResponse!))
       return new Response(
         JSON.stringify({ 
           status: 'error',
@@ -617,13 +751,13 @@ RETURN ONLY VALID JSON - no markdown, no code blocks, no explanations, just the 
       )
     }
 
-    if (!storyboardResponse.insightBuckets || !Array.isArray(storyboardResponse.insightBuckets)) {
+    if (!storyboardResponse!.insightBuckets || !Array.isArray(storyboardResponse!.insightBuckets)) {
       console.error('Validation error: insight buckets missing or not array')
       return new Response(
         JSON.stringify({ 
           status: 'error',
           error: 'Invalid response: insight buckets missing or invalid format.',
-          details: { hasBuckets: !!storyboardResponse.insightBuckets, isArray: Array.isArray(storyboardResponse.insightBuckets) }
+          details: { hasBuckets: !!storyboardResponse!.insightBuckets, isArray: Array.isArray(storyboardResponse!.insightBuckets) }
         }),
         { 
           status: 200,
@@ -635,13 +769,13 @@ RETURN ONLY VALID JSON - no markdown, no code blocks, no explanations, just the 
       )
     }
 
-    if (!storyboardResponse.frames || !Array.isArray(storyboardResponse.frames)) {
+    if (!storyboardResponse!.frames || !Array.isArray(storyboardResponse!.frames)) {
       console.error('Validation error: frames missing or not array')
       return new Response(
         JSON.stringify({ 
           status: 'error',
           error: 'Invalid response: frames missing or invalid format.',
-          details: { hasFrames: !!storyboardResponse.frames, isArray: Array.isArray(storyboardResponse.frames) }
+          details: { hasFrames: !!storyboardResponse!.frames, isArray: Array.isArray(storyboardResponse!.frames) }
         }),
         { 
           status: 200,
@@ -654,7 +788,7 @@ RETURN ONLY VALID JSON - no markdown, no code blocks, no explanations, just the 
     }
 
     // Ensure all frames have required fields and are properly numbered
-    storyboardResponse.frames = storyboardResponse.frames
+    storyboardResponse!.frames = storyboardResponse!.frames
       .map((frame, idx) => ({
         ...frame,
         frameNumber: frame.frameNumber || idx + 1,
@@ -667,8 +801,8 @@ RETURN ONLY VALID JSON - no markdown, no code blocks, no explanations, just the 
       .sort((a, b) => a.frameNumber - b.frameNumber)
 
     // Ensure scene groups are properly linked
-    if (storyboardResponse.sceneGroups) {
-      storyboardResponse.sceneGroups = storyboardResponse.sceneGroups.map(sg => ({
+    if (storyboardResponse!.sceneGroups) {
+      storyboardResponse!.sceneGroups = storyboardResponse!.sceneGroups.map(sg => ({
         ...sg,
         description: sg.description || '',
         situation: sg.situation || ''
@@ -676,8 +810,8 @@ RETURN ONLY VALID JSON - no markdown, no code blocks, no explanations, just the 
     }
 
     // Ensure story claims are properly formatted
-    if (storyboardResponse.storyClaims) {
-      storyboardResponse.storyClaims = storyboardResponse.storyClaims.map(sc => ({
+    if (storyboardResponse!.storyClaims) {
+      storyboardResponse!.storyClaims = storyboardResponse!.storyClaims.map(sc => ({
         ...sc,
         claim: sc.claim || '',
         narrativeLanguage: sc.narrativeLanguage || sc.claim
@@ -685,16 +819,16 @@ RETURN ONLY VALID JSON - no markdown, no code blocks, no explanations, just the 
     }
 
     console.log('Storyboard generated successfully:', {
-      controllingInsight: storyboardResponse.controllingInsight.substring(0, 50) + '...',
-      buckets: storyboardResponse.insightBuckets.length,
-      claims: storyboardResponse.storyClaims?.length || 0,
-      frames: storyboardResponse.frames.length
+      controllingInsight: storyboardResponse!.controllingInsight.substring(0, 50) + '...',
+      buckets: storyboardResponse!.insightBuckets.length,
+      claims: storyboardResponse!.storyClaims?.length || 0,
+      frames: storyboardResponse!.frames.length
     })
 
     return new Response(
       JSON.stringify({
         status: 'success',
-        storyboard: storyboardResponse
+        storyboard: storyboardResponse!
       }),
       {
         status: 200,
