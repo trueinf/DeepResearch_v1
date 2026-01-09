@@ -24,9 +24,9 @@ export default function ProgressIndicator() {
   const currentIndex = stages.findIndex(s => s.id === currentStage)
 
   return (
-    <div className={`w-full bg-white border-b border-[#dddddd] py-4 px-6 fixed top-16 right-0 z-30 transition-all duration-300 ${isCollapsed ? 'left-16' : 'left-64'}`}>
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between relative gap-16">
+    <div className={`w-full bg-white border-b border-[#dddddd] py-4 px-8 sm:px-10 fixed top-16 right-0 z-30 transition-all duration-300 flex items-center ${isCollapsed ? 'left-16' : 'left-64'}`}>
+      <div className="w-full max-w-[1400px] px-6 sm:px-10 ml-16">
+        <div className="flex items-center justify-start relative gap-24">
           {/* Progress Lines */}
           <div className="absolute top-5 left-0 right-0 h-0.5 bg-[#dddddd] -z-10">
             <div
@@ -44,7 +44,7 @@ export default function ProgressIndicator() {
             const isPending = currentIndex < index
 
             return (
-              <div key={stage.id} className="flex flex-col items-center flex-1 min-w-0">
+              <div key={stage.id} className="flex flex-col items-center min-w-0">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
                     isCompleted

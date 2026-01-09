@@ -769,7 +769,7 @@ export default function ResearchMap() {
 
   if (!research || loading) {
     return (
-      <div className="ml-64 pt-16 min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
           <p className="text-gray-600">{loading ? 'Loading intelligence map...' : 'Research not found'}</p>
@@ -780,7 +780,7 @@ export default function ResearchMap() {
 
   if (error && !graphData) {
     return (
-      <div className="ml-64 pt-16 min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md">
           <Network className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <p className="text-red-600 mb-4">{error}</p>
@@ -796,26 +796,34 @@ export default function ResearchMap() {
   }
 
   return (
-    <div className="ml-64 pt-16 min-h-screen bg-gray-50">
-      <div className="p-6">
-        {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate(`/report/${id}`)}
-              className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <Network className="w-6 h-6 text-blue-600" />
-                Research Intelligence Map
-              </h1>
-              <p className="text-gray-600 mt-1">{report?.topic}</p>
-            </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="px-16 py-12">
+        {/* Back Button */}
+        <button
+          onClick={() => navigate(`/report/${id}`)}
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-6 transition-all duration-200 hover:gap-3 group font-semibold hover-lift"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-200" />
+          Back to Report
+        </button>
+
+        {/* Header Card */}
+        <div className="glass-effect rounded-2xl shadow-xl border-2 border-blue-200 overflow-hidden mb-6">
+          <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-cyan-50 border-b border-blue-200">
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Network className="w-6 h-6 text-blue-600" />
+              Research Intelligence Map
+            </h1>
+            {report?.topic && (
+              <p className="text-sm text-gray-600 mt-2">
+                <span className="font-semibold">Research topic:</span> {report.topic}
+              </p>
+            )}
           </div>
-          
+        </div>
+
+        {/* Controls */}
+        <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowTrendView(!showTrendView)}

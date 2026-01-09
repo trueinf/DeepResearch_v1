@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Home from './pages/Home'
 import ResearchProgress from './pages/ResearchProgress'
@@ -18,10 +17,9 @@ import { SidebarProvider, useSidebar } from './context/SidebarContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
-import ProgressIndicator from './components/ProgressIndicator'
 import AIStatusFloat from './components/AIStatusFloat'
 
-function LayoutWrapper({ selectedModel, onModelChange }) {
+function LayoutWrapper() {
   const { isCollapsed } = useSidebar()
   const location = useLocation()
   
@@ -30,6 +28,8 @@ function LayoutWrapper({ selectedModel, onModelChange }) {
   const isReportPage = location.pathname.startsWith('/report/')
   const isStoryboardPage = location.pathname.startsWith('/storyboard/')
   const isPPTPage = location.pathname.startsWith('/ppt/')
+  const isChatPage = location.pathname.startsWith('/chat/')
+  const isMapPage = location.pathname.startsWith('/map/')
   const showSidebar = !isProgressPage && !isReportPage && !isStoryboardPage && !isPPTPage
 
   return (
@@ -38,14 +38,13 @@ function LayoutWrapper({ selectedModel, onModelChange }) {
       <div className={`flex-1 flex flex-col transition-all duration-300 ${showSidebar ? (isCollapsed ? 'ml-16' : 'ml-64') : 'ml-0'}`}>
         {showSidebar && (
           <>
-            <TopBar selectedModel={selectedModel} onModelChange={onModelChange} />
-            <ProgressIndicator />
+          <TopBar />
           </>
         )}
-        <main className={`flex-1 overflow-y-auto ${showSidebar ? '' : ''}`} style={showSidebar ? { paddingTop: '176px' } : {}}>
-          <div className={showSidebar ? "max-w-[1440px] mx-auto px-12 py-10" : ""}>
+        <main className={`flex-1 overflow-y-auto ${showSidebar ? '' : ''}`} style={showSidebar && !isChatPage && !isMapPage ? { paddingTop: '64px' } : {}}>
+          <div className={showSidebar && !isChatPage && !isMapPage ? "max-w-[1440px] mx-auto px-12 py-10" : ""}>
             <Routes>
-              <Route path="/" element={<Home selectedModel={selectedModel} />} />
+              <Route path="/" element={<Home />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/progress/:id" element={<ResearchProgress />} />
               <Route path="/report/:id" element={<ReportView />} />
@@ -58,52 +57,13 @@ function LayoutWrapper({ selectedModel, onModelChange }) {
             </Routes>
           </div>
         </main>
-        {showSidebar && <AIStatusFloat isActive={true} />}
+        {showSidebar && !isChatPage && !isMapPage && <AIStatusFloat isActive={true} />}
       </div>
     </div>
   )
 }
 
 function App() {
-  // Get model from localStorage, but force gemini-2.5-flash if it's pro
-  const getInitialModel = () => {
-    try {
-      const saved = localStorage.getItem('selectedModel')
-      // If saved model is gemini-2.5-pro, reset to flash
-      if (saved === 'gemini-2.5-pro') {
-        localStorage.removeItem('selectedModel')
-        return 'gemini-2.5-flash'
-      }
-      return saved || 'gemini-2.5-flash'
-    } catch {
-      return 'gemini-2.5-flash'
-    }
-  }
-  
-  const [selectedModel, setSelectedModel] = useState(getInitialModel())
-  
-  // Ensure we always start with flash, not pro
-  useEffect(() => {
-    if (selectedModel === 'gemini-2.5-pro') {
-      setSelectedModel('gemini-2.5-flash')
-      try {
-        localStorage.setItem('selectedModel', 'gemini-2.5-flash')
-      } catch {}
-    }
-  }, [selectedModel])
-  
-  // Save model to localStorage when it changes
-  const handleModelChange = (model) => {
-    // Prevent setting to pro - always use flash as default
-    const modelToSet = model === 'gemini-2.5-pro' ? 'gemini-2.5-flash' : model
-    setSelectedModel(modelToSet)
-    try {
-      localStorage.setItem('selectedModel', modelToSet)
-    } catch {
-      // Ignore localStorage errors
-    }
-  }
-
   return (
     <AuthProvider>
       <ResearchProvider>
@@ -120,7 +80,7 @@ function App() {
               path="/*"
               element={
                 <ProtectedRoute>
-                  <LayoutWrapper selectedModel={selectedModel} onModelChange={handleModelChange} />
+                  <LayoutWrapper />
                 </ProtectedRoute>
               }
             />

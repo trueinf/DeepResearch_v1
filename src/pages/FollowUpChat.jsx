@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useResearch } from '../context/ResearchContext'
-import { ArrowLeft, Send, User, Bot, Loader2 } from 'lucide-react'
+import { ArrowLeft, Send, User, Bot, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
 
 export default function FollowUpChat() {
   const { id } = useParams()
@@ -15,6 +15,7 @@ export default function FollowUpChat() {
   const [loading, setLoading] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
   const [clarifyingAnswers, setClarifyingAnswers] = useState(null)
+  const [isExecutiveSummaryCollapsed, setIsExecutiveSummaryCollapsed] = useState(true)
 
   useEffect(() => {
     const loadData = async () => {
@@ -158,25 +159,25 @@ export default function FollowUpChat() {
   }
 
   return (
-    <div className="ml-64 pt-16 min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-6 py-12">
+    <div className="min-h-screen bg-gray-50">
+      <div className="w-full px-16 py-12">
         <button
           onClick={() => navigate(`/report/${id}`)}
-          className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-8 transition-all duration-200 hover:gap-3 group font-semibold hover-lift"
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-4 transition-all duration-200 hover:gap-3 group font-semibold hover-lift"
         >
           <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-200" />
           Back to Report
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="lg:col-span-1 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[calc(100vh-140px)] items-start">
+          <div className="lg:col-span-1 space-y-6 flex flex-col h-full">
             {clarifyingAnswers && clarifyingAnswers.length > 0 && (
-              <div className="glass-effect rounded-2xl shadow-xl border-2 border-purple-200 overflow-hidden hover-lift animate-fadeIn">
-                <div className="px-6 py-4 border-b border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50">
+              <div className="glass-effect rounded-2xl shadow-xl border-2 border-purple-200 overflow-hidden hover-lift animate-fadeIn max-h-[55vh] flex flex-col">
+                <div className="px-6 py-4 border-b border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50 flex-shrink-0">
                   <h2 className="text-lg font-semibold text-gray-900">Research Context</h2>
                   <p className="text-xs text-gray-600 mt-1">Your original clarifications</p>
                 </div>
-                <div className="px-6 py-4 max-h-48 overflow-y-auto">
+                <div className="px-6 py-4 overflow-y-auto flex-1">
                   {clarifyingAnswers.map((qa, idx) => (
                     <div key={idx} className="mb-4 last:mb-0">
                       <p className="text-sm font-semibold text-purple-700 mb-1">Q{idx + 1}: {qa.question}</p>
@@ -187,16 +188,14 @@ export default function FollowUpChat() {
               </div>
             )}
             
-            <div className="glass-effect rounded-2xl shadow-xl border-2 border-blue-200 overflow-hidden hover-lift animate-fadeIn">
-              <div className="px-6 py-4 border-b border-blue-200 bg-gradient-to-r from-blue-50 to-cyan-50">
+            <div className="glass-effect rounded-2xl shadow-xl border-2 border-blue-200 overflow-hidden hover-lift animate-fadeIn max-h-[35vh] flex flex-col">
+              <div className="px-6 py-4 border-b border-blue-200 bg-gradient-to-r from-blue-50 to-cyan-50 flex-shrink-0">
                 <h2 className="text-lg font-semibold text-gray-900">Executive Summary</h2>
               </div>
 
-              <div className="px-6 py-6 max-h-[calc(100vh-400px)] overflow-y-auto animate-fadeIn">
+              <div className="px-6 py-4 overflow-y-auto flex-1">
                 {report.executiveSummary ? (
-                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-200">
-                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{report.executiveSummary}</p>
-                  </div>
+                  <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{report.executiveSummary}</div>
                 ) : (
                   <div className="text-center py-12 text-gray-500">
                     <p>Executive summary not available</p>
@@ -206,8 +205,8 @@ export default function FollowUpChat() {
             </div>
           </div>
 
-          <div className="lg:col-span-1 animate-fadeIn" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
-            <div className="glass-effect rounded-2xl shadow-xl border-2 border-blue-200 h-[calc(100vh-200px)] flex flex-col">
+          <div className="lg:col-span-1 animate-fadeIn h-full" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
+            <div className="glass-effect rounded-2xl shadow-xl border-2 border-blue-200 h-full flex flex-col">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900">Follow-up Questions</h2>
               </div>

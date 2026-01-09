@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronDown, LogOut } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useSidebar } from '../context/SidebarContext'
 
-export default function TopBar({ selectedModel, onModelChange }) {
+export default function TopBar() {
   const { isCollapsed } = useSidebar()
-  const [showModelDropdown, setShowModelDropdown] = useState(false)
   const [showUserDropdown, setShowUserDropdown] = useState(false)
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
@@ -26,58 +25,10 @@ export default function TopBar({ selectedModel, onModelChange }) {
     }
     return 'U'
   }
-  
-  const models = [
-    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', status: 'active' },
-    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', status: 'active' },
-    { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', status: 'active' },
-  ]
-
-  const safeSelectedModel = selectedModel === 'gemini-2.5-pro' ? 'gemini-2.5-flash' : (selectedModel || 'gemini-2.5-flash')
-  const currentModel = models.find(m => m.id === safeSelectedModel) || models[0]
 
   return (
-    <div className={`h-16 bg-white border-b border-[#dddddd] flex items-center justify-end px-6 fixed top-0 right-0 z-40 transition-all duration-300 ${isCollapsed ? 'left-16' : 'left-64'}`}>
-      <div className="flex items-center gap-4">
-        {/* Model Selector */}
-        <div className="relative">
-          <button
-            onClick={() => setShowModelDropdown(!showModelDropdown)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-[#f0f0f0] hover:bg-[#e0e0e0] rounded-lg transition-colors border border-[#e0e0e0]"
-          >
-            <span className="text-sm font-medium text-[#333333]">{currentModel.name}</span>
-            <ChevronDown className="w-4 h-4 text-[#666666]" />
-          </button>
-
-          {showModelDropdown && (
-            <>
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setShowModelDropdown(false)}
-              ></div>
-              <div className="absolute right-0 mt-2 w-56 bg-white border border-[#e0e0e0] rounded-lg shadow-xl z-20">
-                <div className="py-1">
-                  {models.map((model) => (
-                    <button
-                      key={model.id}
-                      onClick={() => {
-                        onModelChange(model.id)
-                        setShowModelDropdown(false)
-                      }}
-                      className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-[#f0f0f0] transition-colors ${
-                        safeSelectedModel === model.id ? 'text-[#000000] font-semibold' : 'text-[#333333]'
-                      }`}
-                    >
-                      <div className={`w-2 h-2 rounded-full ${model.status === 'active' ? 'bg-[#000000]' : 'bg-[#999999]'}`}></div>
-                      {model.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-
+    <div className={`h-16 bg-white border-b border-[#dddddd] flex items-center px-8 sm:px-10 fixed top-0 right-0 z-40 transition-all duration-300 overflow-visible ${isCollapsed ? 'left-16' : 'left-64'}`}>
+      <div className="w-full max-w-5xl mx-auto flex items-center justify-end">
         {/* User Menu */}
         <div className="relative">
           <button

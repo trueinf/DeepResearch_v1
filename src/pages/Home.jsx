@@ -787,8 +787,8 @@ ${clarificationsText}
         />
       )}
       
-      <div className="w-full max-w-full">
-        <div className="mb-12">
+      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 pt-8">
+        <div className="mb-12 text-center space-y-4">
           {/* Step Indicator */}
           <div className="flex items-center justify-center gap-8 mb-8">
             <div className="flex flex-col items-center">
@@ -807,11 +807,11 @@ ${clarificationsText}
               <div className="w-full h-0.5 bg-[#dddddd] mt-2"></div>
             </div>
           </div>
-          <h1 className="text-5xl font-bold text-[#000000] mb-4 tracking-tight leading-tight">Deep Research</h1>
-          <p className="text-[#666666] text-base leading-relaxed max-w-2xl">Gather enterprise-level market, client, and industry insights via LLMs.</p>
+          <h1 className="text-5xl font-bold text-[#000000] mb-3 tracking-tight leading-tight text-center">Deep Research</h1>
+          <p className="text-[#666666] text-base leading-relaxed max-w-2xl mx-auto text-center">Gather enterprise-level market, client, and industry insights via LLMs.</p>
         </div>
 
-          <div className="flex gap-8 border-b border-[#dddddd] mb-12 pb-4">
+          <div className="flex flex-wrap items-center justify-center gap-10 border-b border-[#dddddd] mb-12 pb-4 pt-2">
             <button
               onClick={() => setActiveTab('new')}
               className={`px-0 py-2.5 text-sm font-medium transition-colors flex items-center gap-2 ${
@@ -1074,7 +1074,7 @@ ${clarificationsText}
                   </div>
                 </div>
 
-                <div>
+                <div className="px-4 sm:px-6 md:px-8">
                   {loading ? (
                     <div className="text-center py-16 text-[#666666]">
                       <Loader2 className="w-8 h-8 mx-auto mb-4 text-[#000000] animate-spin" />
@@ -1094,11 +1094,11 @@ ${clarificationsText}
                         <div
                           key={research.id}
                           onClick={() => navigate(`/progress/${research.id}`)}
-                          className="p-6 border-b border-[#dddddd] hover:bg-[#f0f0f0] transition-colors cursor-pointer last:border-b-0"
+                          className="p-6 sm:p-7 md:p-8 border-b border-[#dddddd] hover:bg-[#f0f0f0] transition-colors cursor-pointer last:border-b-0 rounded-lg"
                         >
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex-1">
-                              <h4 className="font-semibold text-[#000000] mb-3 text-base">{extractOriginalQuery(research.topic)}</h4>
+                              <h4 className="font-semibold text-[#000000] mb-3 text-base leading-relaxed">{extractOriginalQuery(research.topic)}</h4>
                               <div className="flex items-center gap-3 flex-wrap">
                                 <span className="px-3 py-1 bg-[#f0f0f0] text-[#000000] rounded-full text-xs font-semibold flex items-center gap-1.5 border border-[#dddddd]">
                                   <Clock className="w-3 h-3 text-[#000000]" />
@@ -1208,7 +1208,7 @@ ${clarificationsText}
                   </div>
                 </div>
 
-                <div>
+                <div className="px-4 sm:px-6 md:px-8">
                   {loading ? (
                     <div className="text-center py-16 text-[#666666]">
                       <Loader2 className="w-8 h-8 mx-auto mb-4 text-[#000000] animate-spin" />
@@ -1229,11 +1229,11 @@ ${clarificationsText}
                         <div
                           key={research.id}
                           onClick={() => navigate(`/report/${research.id}`)}
-                          className="p-6 border-b border-[#dddddd] hover:bg-[#f0f0f0] transition-colors cursor-pointer last:border-b-0"
+                          className="p-6 sm:p-7 md:p-8 border-b border-[#dddddd] hover:bg-[#f0f0f0] transition-colors cursor-pointer last:border-b-0 rounded-lg"
                         >
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex-1">
-                              <h4 className="font-semibold text-[#000000] mb-3 text-base">{extractOriginalQuery(research.topic)}</h4>
+                              <h4 className="font-semibold text-[#000000] mb-3 text-base leading-relaxed">{extractOriginalQuery(research.topic)}</h4>
                               <div className="flex items-center gap-3 flex-wrap">
                                 <span className="px-3 py-1 bg-[#f0f0f0] text-[#000000] rounded-full text-xs font-semibold flex items-center gap-1.5 border border-[#dddddd]">
                                   <CheckCircle className="w-3 h-3 text-[#000000]" />

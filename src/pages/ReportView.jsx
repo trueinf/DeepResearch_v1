@@ -77,34 +77,14 @@ export default function ReportView() {
     iconStyle: 'filled', // 'filled', 'outline', 'minimal'
     accentBarPosition: 'bottom' // 'top', 'bottom', 'both', 'none'
   })
-  const [expandedSections, setExpandedSections] = useState({
-    executiveSummary: true,
-    detailedAnalysis: true,
-    keyFindings: true,
-    insights: true,
-    conclusion: true
-  })
+  const [isContentExpanded, setIsContentExpanded] = useState(false)
   
-  // Remove expand/collapse buttons - always show content
   // Storyboard state
   const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false)
   const [storyboard, setStoryboard] = useState(null)
   const [showStoryboard, setShowStoryboard] = useState(false)
   const [storyboardError, setStoryboardError] = useState('')
   const [storySpine, setStorySpine] = useState('problem-insight-resolution')
-
-  const toggleSection = (section) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }))
-  }
-
-  const getPreview = (text, maxLength = 200) => {
-    if (!text) return ''
-    if (text.length <= maxLength) return text
-    return text.substring(0, maxLength) + '...'
-  }
 
   const formatDuration = (startTime, endTime) => {
     if (!startTime || !endTime) return null
@@ -2165,26 +2145,32 @@ export default function ReportView() {
                 </div>
               )}
 
-              {/* Executive Summary */}
-              {report.executiveSummary ? (
-                <div className="bg-white rounded-lg shadow-sm border border-[#dddddd]/50 py-6 px-6 mb-6">
-                  <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-[#000000] flex items-center gap-2">
-                      <span className="text-[#000000]">|</span>
-                      Executive Summary
-                    </h2>
-                    <button
-                      onClick={() => toggleSection('executiveSummary')}
-                      className="flex items-center justify-center w-8 h-8 rounded hover:bg-[#f0f0f0] transition-colors"
-                    >
-                      {expandedSections.executiveSummary ? (
-                        <ChevronUp className="w-5 h-5 text-[#666666]" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5 text-[#666666]" />
-                      )}
-                    </button>
-                  </div>
-                  {expandedSections.executiveSummary && (
+              <div className="bg-white rounded-lg shadow-sm border border-[#dddddd]/60 p-4 mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold text-[#000000] flex items-center gap-2">
+                    <span className="text-[#000000]">|</span>
+                    Report Content
+                  </h2>
+                  <button
+                    onClick={() => setIsContentExpanded(prev => !prev)}
+                    className="flex items-center justify-center w-9 h-9 rounded hover:bg-[#f0f0f0] transition-colors"
+                  >
+                    {isContentExpanded ? (
+                      <ChevronUp className="w-5 h-5 text-[#666666]" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-[#666666]" />
+                    )}
+                  </button>
+                </div>
+            {isContentExpanded ? (
+              <div className="bg-white rounded-lg shadow-sm border border-[#dddddd]/60 p-6 space-y-10 max-h-[760px] overflow-y-auto">
+                {/* Executive Summary */}
+                <div className="space-y-3">
+                  <h2 className="text-2xl font-bold text-[#000000] flex items-center gap-2">
+                    <span className="text-[#000000]">|</span>
+                    Executive Summary
+                  </h2>
+                  {report.executiveSummary ? (
                     <div className="prose prose-lg max-w-none">
                       <p className="text-[#000000] leading-relaxed text-base break-words whitespace-normal text-justify" style={{
                         wordWrap: 'break-word',
@@ -2199,40 +2185,26 @@ export default function ReportView() {
                         {report.executiveSummary}
                       </p>
                     </div>
+                  ) : (
+                    <div className="border border-[#dddddd] rounded-lg p-4 bg-[#fafafa]">
+                      <div className="flex items-center gap-3">
+                        <Loader2 className="w-5 h-5 animate-spin text-[#666666]" />
+                        <div>
+                          <p className="text-[#000000] font-medium">Executive Summary is being generated...</p>
+                          <p className="text-[#666666] text-sm mt-1">If this persists, the report may need to be regenerated.</p>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
-              ) : (
-                <div className="bg-white border border-[#dddddd] rounded-lg p-4 mb-6">
-                  <div className="flex items-center gap-3">
-                    <Loader2 className="w-5 h-5 animate-spin text-[#666666]" />
-                    <div>
-                      <p className="text-[#000000] font-medium">Executive Summary is being generated...</p>
-                      <p className="text-[#666666] text-sm mt-1">If this persists, the report may need to be regenerated.</p>
-                    </div>
-                  </div>
-                </div>
-              )}
 
-              {/* Detailed Analysis */}
-              {report.detailedAnalysis && (
-                <div className="bg-white rounded-lg shadow-sm border border-[#dddddd]/50 p-6 mb-6">
-                  <div className="mb-6 flex items-center justify-between">
+                {/* Detailed Analysis */}
+                {report.detailedAnalysis && (
+                  <div className="space-y-4">
                     <h2 className="text-2xl font-bold text-[#000000] flex items-center gap-2">
                       <span className="text-[#000000]">|</span>
                       Detailed Analysis
                     </h2>
-                    <button
-                      onClick={() => toggleSection('detailedAnalysis')}
-                      className="flex items-center justify-center w-8 h-8 rounded hover:bg-[#f0f0f0] transition-colors"
-                    >
-                      {expandedSections.detailedAnalysis ? (
-                        <ChevronUp className="w-5 h-5 text-[#666666]" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5 text-[#666666]" />
-                      )}
-                    </button>
-                  </div>
-                  {expandedSections.detailedAnalysis ? (
                     <div className="prose prose-lg max-w-none text-[#000000] leading-relaxed whitespace-normal text-justify" style={{
                       wordWrap: 'break-word',
                       overflowWrap: 'break-word',
@@ -2337,97 +2309,61 @@ export default function ReportView() {
                       return <br key={idx} />
                     })}
                     </div>
-                ) : (
-                  <div className="bg-white p-4">
-                    <p className="text-[#000000] leading-relaxed text-base text-justify">{getPreview(report.detailedAnalysis, 300)}</p>
                   </div>
                 )}
-                </div>
-              )}
 
-              {/* Key Findings */}
-              <div className="bg-white rounded-lg shadow-sm border border-[#dddddd]/50 p-6 mb-6">
-                    <div className="mb-6 flex items-center justify-between">
-                      <h2 className="text-2xl font-bold text-[#000000] flex items-center gap-2">
-                        <span className="text-[#000000]">|</span>
-                        Key Findings
-                      </h2>
-                      <button
-                        onClick={() => toggleSection('keyFindings')}
-                        className="flex items-center justify-center w-8 h-8 rounded hover:bg-[#f0f0f0] transition-colors"
-                      >
-                        {expandedSections.keyFindings ? (
-                          <ChevronUp className="w-5 h-5 text-[#666666]" />
-                        ) : (
-                          <ChevronDown className="w-5 h-5 text-[#666666]" />
-                        )}
-                      </button>
-                    </div>
-                {expandedSections.keyFindings ? (
+                {/* Key Findings */}
                 <div className="space-y-4">
-                  {Array.isArray(report.keyFindings) && report.keyFindings.length > 0 ? report.keyFindings.map((finding, index) => (
-                    <div 
-                      key={index} 
-                      className="flex gap-4 items-start"
-                    >
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#000000] text-white flex items-center justify-center text-sm font-bold">
-                        {index + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-base leading-relaxed text-[#000000] break-words text-justify" style={{
-                          wordWrap: 'break-word',
-                          overflowWrap: 'break-word',
-                          maxWidth: '100%',
-                          textAlign: 'justify',
-                          textJustify: 'inter-word'
-                        }}>{finding.text}</p>
-                        {Array.isArray(finding.citations) && finding.citations.length > 0 && (
-                          <div className="flex gap-2 mt-2">
-                            {finding.citations.map((cite, i) => (
-                              <span
-                                key={i}
-                                className="inline-flex items-center justify-center px-2 py-1 rounded text-[#666666] text-xs"
-                              >
-                                {cite}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )) : (
-                    <div className="bg-white p-4">
-                      <p className="text-[#666666] italic text-base">No key findings available</p>
-                    </div>
-                  )}
-                </div>
-                ) : (
-                  <div className="bg-white p-4">
-                    <p className="text-[#000000] leading-relaxed text-base text-justify">{getPreview(report.keyFindings?.map(f => f.text).join(' ') || '', 300)}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Insights and Implications */}
-              {report.insights && (
-                <div className="bg-white rounded-lg shadow-sm border border-[#dddddd]/50 p-6 mb-6">
-                      <div className="mb-6 flex items-center justify-between">
-                        <h2 className="text-2xl font-bold text-[#000000] flex items-center gap-2">
-                          <span className="text-[#000000]">|</span>
-                          Insights and Implications
-                        </h2>
-                        <button
-                          onClick={() => toggleSection('insights')}
-                          className="flex items-center justify-center w-8 h-8 rounded hover:bg-[#f0f0f0] transition-colors"
-                        >
-                          {expandedSections.insights ? (
-                            <ChevronUp className="w-5 h-5 text-[#666666]" />
-                          ) : (
-                            <ChevronDown className="w-5 h-5 text-[#666666]" />
+                  <h2 className="text-2xl font-bold text-[#000000] flex items-center gap-2">
+                    <span className="text-[#000000]">|</span>
+                    Key Findings
+                  </h2>
+                  <div className="space-y-4">
+                    {Array.isArray(report.keyFindings) && report.keyFindings.length > 0 ? report.keyFindings.map((finding, index) => (
+                      <div 
+                        key={index} 
+                        className="flex gap-4 items-start"
+                      >
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#000000] text-white flex items-center justify-center text-sm font-bold">
+                          {index + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-base leading-relaxed text-[#000000] break-words text-justify" style={{
+                            wordWrap: 'break-word',
+                            overflowWrap: 'break-word',
+                            maxWidth: '100%',
+                            textAlign: 'justify',
+                            textJustify: 'inter-word'
+                          }}>{finding.text}</p>
+                          {Array.isArray(finding.citations) && finding.citations.length > 0 && (
+                            <div className="flex gap-2 mt-2">
+                              {finding.citations.map((cite, i) => (
+                                <span
+                                  key={i}
+                                  className="inline-flex items-center justify-center px-2 py-1 rounded text-[#666666] text-xs"
+                                >
+                                  {cite}
+                                </span>
+                              ))}
+                            </div>
                           )}
-                        </button>
+                        </div>
                       </div>
-                  {expandedSections.insights ? (
+                    )) : (
+                      <div className="p-4 bg-[#fafafa] rounded-lg border border-[#dddddd]">
+                        <p className="text-[#666666] italic text-base">No key findings available</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Insights and Implications */}
+                {report.insights && (
+                  <div className="space-y-4">
+                    <h2 className="text-2xl font-bold text-[#000000] flex items-center gap-2">
+                      <span className="text-[#000000]">|</span>
+                      Insights and Implications
+                    </h2>
                     <div className="prose prose-lg max-w-none text-[#000000] leading-relaxed whitespace-normal text-justify" style={{
                       wordWrap: 'break-word',
                       overflowWrap: 'break-word',
@@ -2515,34 +2451,16 @@ export default function ReportView() {
                       return <br key={idx} />
                     })}
                     </div>
-                  ) : (
-                    <div className="bg-white p-4">
-                      <p className="text-[#000000] leading-relaxed text-base text-justify">{getPreview(report.insights, 300)}</p>
-                    </div>
-                  )}
-                </div>
-              )}
+                  </div>
+                )}
 
-              {/* Conclusion */}
-              {report.conclusion && (
-                <div className="bg-white rounded-lg shadow-sm border border-[#dddddd]/50 p-6 mb-6">
-                      <div className="mb-6 flex items-center justify-between">
-                        <h2 className="text-2xl font-bold text-[#000000] flex items-center gap-2">
-                          <span className="text-[#000000]">|</span>
-                          Conclusion
-                        </h2>
-                        <button
-                          onClick={() => toggleSection('conclusion')}
-                          className="flex items-center justify-center w-8 h-8 rounded hover:bg-[#f0f0f0] transition-colors"
-                        >
-                          {expandedSections.conclusion ? (
-                            <ChevronUp className="w-5 h-5 text-[#666666]" />
-                          ) : (
-                            <ChevronDown className="w-5 h-5 text-[#666666]" />
-                          )}
-                        </button>
-                      </div>
-                  {expandedSections.conclusion ? (
+                {/* Conclusion */}
+                {report.conclusion && (
+                  <div className="space-y-4">
+                    <h2 className="text-2xl font-bold text-[#000000] flex items-center gap-2">
+                      <span className="text-[#000000]">|</span>
+                      Conclusion
+                    </h2>
                     <div className="prose prose-lg max-w-none text-[#000000] leading-relaxed whitespace-normal text-justify" style={{
                       wordWrap: 'break-word',
                       overflowWrap: 'break-word',
@@ -2639,13 +2557,13 @@ export default function ReportView() {
                       return <br key={idx} />
                     })}
                     </div>
-                  ) : (
-                    <div className="bg-white p-4">
-                      <p className="text-[#000000] leading-relaxed text-base text-justify">{getPreview(report.conclusion, 300)}</p>
-                    </div>
-                  )}
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-sm text-[#666666] px-2 py-1">Expand to view report content</div>
+            )}
+          </div>
 
             </div>
           </div>

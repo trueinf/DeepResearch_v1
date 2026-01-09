@@ -119,7 +119,7 @@ export default function StoryboardView({ storyboard, onClose, researchId }) {
   })
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-6 sm:p-8 overflow-y-auto">
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-[#000000] text-white p-6 rounded-t-lg">
@@ -156,7 +156,7 @@ export default function StoryboardView({ storyboard, onClose, researchId }) {
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-6 sm:p-8 space-y-6">
           {/* Controlling Insight */}
           <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-500 p-5 rounded-lg">
             <div className="flex items-start gap-3">
@@ -171,153 +171,157 @@ export default function StoryboardView({ storyboard, onClose, researchId }) {
           </div>
 
           {/* Insight Buckets */}
-          {storyboard.insightBuckets?.map((bucket) => (
-            <div key={bucket.id} className="border border-gray-200 rounded-lg overflow-hidden">
-              <button
-                onClick={() => toggleBucket(bucket.id)}
-                className="w-full bg-gray-50 hover:bg-gray-100 p-4 flex items-center justify-between transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <Layers className="w-5 h-5 text-[#333333]" />
-                  <div className="text-left">
-                    <h3 className="font-semibold text-gray-800">{bucket.name}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{bucket.description}</p>
-                  </div>
-                </div>
-                {expandedBuckets[bucket.id] ? (
-                  <ChevronDown className="w-5 h-5 text-gray-500" />
-                ) : (
-                  <ChevronRight className="w-5 h-5 text-gray-500" />
-                )}
-              </button>
-
-              {expandedBuckets[bucket.id] && (
-                <div className="p-4 bg-white border-t border-gray-200">
-                  <div className="mb-4">
-                    <h4 className="font-medium text-gray-700 mb-2">Supporting Findings:</h4>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 ml-2">
-                      {bucket.findings?.map((finding, idx) => (
-                        <li key={idx}>{finding}</li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Story Claims for this bucket */}
-                  {claimsByBucket[bucket.id]?.map((claim) => (
-                    <div key={claim.id} className="mt-4 border border-gray-200 rounded-lg overflow-hidden">
-                      <button
-                        onClick={() => toggleClaim(claim.id)}
-                        className="w-full bg-[#f5f5f5] hover:bg-[#f0f0f0] p-3 flex items-center justify-between transition-colors"
-                      >
-                        <div className="flex items-center gap-2">
-                          <MessageSquare className="w-4 h-4 text-[#333333]" />
-                          <span className="font-medium text-gray-800 text-sm">{claim.claim}</span>
-                        </div>
-                        {expandedClaims[claim.id] ? (
-                          <ChevronDown className="w-4 h-4 text-gray-500" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4 text-gray-500" />
-                        )}
-                      </button>
-
-                      {expandedClaims[claim.id] && (
-                        <div className="p-3 bg-white border-t border-gray-200">
-                          <p className="text-sm text-gray-600 italic mb-3">{claim.narrativeLanguage}</p>
-
-                          {/* Scene Groups for this claim */}
-                          {scenesByClaim[claim.id]?.map((scene) => (
-                            <div key={scene.id} className="mt-3 border border-gray-200 rounded-lg overflow-hidden">
-                              <button
-                                onClick={() => toggleScene(scene.id)}
-                                className={`w-full p-3 flex items-center justify-between transition-colors border-l-4 ${getSceneTypeColor(scene.type)}`}
-                              >
-                                <div className="flex items-center gap-2">
-                                  {getSceneTypeIcon(scene.type)}
-                                  <div className="text-left">
-                                    <span className="font-medium text-sm capitalize">{scene.type}</span>
-                                    <p className="text-xs text-gray-600 mt-0.5">{scene.description}</p>
-                                  </div>
-                                </div>
-                                {expandedScenes[scene.id] ? (
-                                  <ChevronDown className="w-4 h-4" />
-                                ) : (
-                                  <ChevronRight className="w-4 h-4" />
-                                )}
-                              </button>
-
-                              {expandedScenes[scene.id] && (
-                                <div className="p-3 bg-gray-50 border-t border-gray-200">
-                                  <p className="text-xs text-gray-600 mb-3">{scene.situation}</p>
-
-                                  {/* Frames for this scene */}
-                                  {framesByScene[scene.id]?.map((frame) => (
-                                    <div
-                                      key={frame.id}
-                                      className="mt-2 bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer"
-                                      onClick={() => setSelectedFrame(frame)}
-                                    >
-                                      <div className="flex items-start justify-between gap-3">
-                                        <div className="flex-1">
-                                          <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-xs font-semibold text-[#000000] bg-[#f0f0f0] border border-[#e0e0e0] px-2 py-1 rounded">
-                                              Frame {frame.frameNumber}
-                                            </span>
-                                          </div>
-                                          <h5 className="font-medium text-gray-800 text-sm mb-1">{frame.idea}</h5>
-                                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
-                                            <div className="flex items-start gap-1.5">
-                                              <ImageIcon className="w-3.5 h-3.5 text-[#333333] mt-0.5 flex-shrink-0" />
-                                              <p className="text-xs text-gray-600">{frame.visualAction}</p>
-                                            </div>
-                                            <div className="flex items-start gap-1.5">
-                                              <Heart className="w-3.5 h-3.5 text-[#333333] mt-0.5 flex-shrink-0" />
-                                              <p className="text-xs text-gray-600">{frame.emotionalBeat}</p>
-                                            </div>
-                                            <div className="flex items-start gap-1.5">
-                                              <Target className="w-3.5 h-3.5 text-[#333333] mt-0.5 flex-shrink-0" />
-                                              <p className="text-xs text-gray-600">{frame.logicalPurpose}</p>
-                                            </div>
-                                          </div>
-                                        </div>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation()
-                                            setShowEvidence(prev => ({
-                                              ...prev,
-                                              [frame.id]: !prev[frame.id]
-                                            }))
-                                          }}
-                                          className="text-xs text-[#666666] hover:text-[#000000] flex items-center gap-1"
-                                        >
-                                          <Eye className="w-3.5 h-3.5" />
-                                          Evidence
-                                        </button>
-                                      </div>
-
-                                      {showEvidence[frame.id] && frame.supportingEvidence && frame.supportingEvidence.length > 0 && (
-                                        <div className="mt-3 pt-3 border-t border-gray-200">
-                                          <h6 className="text-xs font-medium text-gray-700 mb-2">Supporting Evidence:</h6>
-                                          <ul className="list-disc list-inside space-y-1 text-xs text-gray-600 ml-2">
-                                            {frame.supportingEvidence.map((evidence, idx) => (
-                                              <li key={idx}>{evidence}</li>
-                                            ))}
-                                          </ul>
-                                        </div>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
+          {storyboard.insightBuckets?.length > 0 && (
+            <div className="space-y-4">
+              {storyboard.insightBuckets.map((bucket) => (
+                <div key={bucket.id} className="border border-gray-200 rounded-lg overflow-hidden shadow-sm bg-white">
+                  <button
+                    onClick={() => toggleBucket(bucket.id)}
+                    className="w-full bg-gray-50 hover:bg-gray-100 p-4 flex items-center justify-between transition-colors min-h-[120px]"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Layers className="w-5 h-5 text-[#333333]" />
+                      <div className="text-left">
+                        <h3 className="font-semibold text-gray-800">{bucket.name}</h3>
+                        <p className="text-sm text-gray-600 mt-1">{bucket.description}</p>
+                      </div>
                     </div>
-                  ))}
+                    {expandedBuckets[bucket.id] ? (
+                      <ChevronDown className="w-5 h-5 text-gray-500" />
+                    ) : (
+                      <ChevronRight className="w-5 h-5 text-gray-500" />
+                    )}
+                  </button>
+
+                  {expandedBuckets[bucket.id] && (
+                    <div className="p-4 bg-white border-t border-gray-200 space-y-4">
+                      <div>
+                        <h4 className="font-medium text-gray-700 mb-2">Supporting Findings:</h4>
+                        <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 ml-2">
+                          {bucket.findings?.map((finding, idx) => (
+                            <li key={idx}>{finding}</li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {/* Story Claims for this bucket */}
+                      {claimsByBucket[bucket.id]?.map((claim) => (
+                        <div key={claim.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                          <button
+                            onClick={() => toggleClaim(claim.id)}
+                            className="w-full bg-[#f5f5f5] hover:bg-[#f0f0f0] p-3 flex items-center justify-between transition-colors"
+                          >
+                            <div className="flex items-center gap-2">
+                              <MessageSquare className="w-4 h-4 text-[#333333]" />
+                              <span className="font-medium text-gray-800 text-sm">{claim.claim}</span>
+                            </div>
+                            {expandedClaims[claim.id] ? (
+                              <ChevronDown className="w-4 h-4 text-gray-500" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4 text-gray-500" />
+                            )}
+                          </button>
+
+                          {expandedClaims[claim.id] && (
+                            <div className="p-3 bg-white border-t border-gray-200 space-y-3">
+                              <p className="text-sm text-gray-600 italic">{claim.narrativeLanguage}</p>
+
+                              {/* Scene Groups for this claim */}
+                              {scenesByClaim[claim.id]?.map((scene) => (
+                                <div key={scene.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                                  <button
+                                    onClick={() => toggleScene(scene.id)}
+                                    className={`w-full p-3 flex items-center justify-between transition-colors border-l-4 ${getSceneTypeColor(scene.type)}`}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      {getSceneTypeIcon(scene.type)}
+                                      <div className="text-left">
+                                        <span className="font-medium text-sm capitalize">{scene.type}</span>
+                                        <p className="text-xs text-gray-600 mt-0.5">{scene.description}</p>
+                                      </div>
+                                    </div>
+                                    {expandedScenes[scene.id] ? (
+                                      <ChevronDown className="w-4 h-4" />
+                                    ) : (
+                                      <ChevronRight className="w-4 h-4" />
+                                    )}
+                                  </button>
+
+                                  {expandedScenes[scene.id] && (
+                                    <div className="p-3 bg-gray-50 border-t border-gray-200 space-y-2">
+                                      <p className="text-xs text-gray-600">{scene.situation}</p>
+
+                                      {/* Frames for this scene */}
+                                      {framesByScene[scene.id]?.map((frame) => (
+                                        <div
+                                          key={frame.id}
+                                          className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer"
+                                          onClick={() => setSelectedFrame(frame)}
+                                        >
+                                          <div className="flex items-start justify-between gap-3">
+                                            <div className="flex-1">
+                                              <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-xs font-semibold text-[#000000] bg-[#f0f0f0] border border-[#e0e0e0] px-2 py-1 rounded">
+                                                  Frame {frame.frameNumber}
+                                                </span>
+                                              </div>
+                                              <h5 className="font-medium text-gray-800 text-sm mb-1">{frame.idea}</h5>
+                                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+                                                <div className="flex items-start gap-1.5">
+                                                  <ImageIcon className="w-3.5 h-3.5 text-[#333333] mt-0.5 flex-shrink-0" />
+                                                  <p className="text-xs text-gray-600">{frame.visualAction}</p>
+                                                </div>
+                                                <div className="flex items-start gap-1.5">
+                                                  <Heart className="w-3.5 h-3.5 text-[#333333] mt-0.5 flex-shrink-0" />
+                                                  <p className="text-xs text-gray-600">{frame.emotionalBeat}</p>
+                                                </div>
+                                                <div className="flex items-start gap-1.5">
+                                                  <Target className="w-3.5 h-3.5 text-[#333333] mt-0.5 flex-shrink-0" />
+                                                  <p className="text-xs text-gray-600">{frame.logicalPurpose}</p>
+                                                </div>
+                                              </div>
+                                            </div>
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                setShowEvidence(prev => ({
+                                                  ...prev,
+                                                  [frame.id]: !prev[frame.id]
+                                                }))
+                                              }}
+                                              className="text-xs text-[#666666] hover:text-[#000000] flex items-center gap-1"
+                                            >
+                                              <Eye className="w-3.5 h-3.5" />
+                                              Evidence
+                                            </button>
+                                          </div>
+
+                                          {showEvidence[frame.id] && frame.supportingEvidence && frame.supportingEvidence.length > 0 && (
+                                            <div className="mt-3 pt-3 border-t border-gray-200">
+                                              <h6 className="text-xs font-medium text-gray-700 mb-2">Supporting Evidence:</h6>
+                                              <ul className="list-disc list-inside space-y-1 text-xs text-gray-600 ml-2">
+                                                {frame.supportingEvidence.map((evidence, idx) => (
+                                                  <li key={idx}>{evidence}</li>
+                                                ))}
+                                              </ul>
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
-          ))}
+          )}
 
           {/* Remaining Research */}
           {storyboard.remainingResearch && (
