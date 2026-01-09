@@ -179,9 +179,9 @@ export default function StoryboardPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(`/ppt/${id}`)}
-              className="flex items-center gap-2 px-4 py-2 bg-white text-[#000000] rounded-lg hover:bg-white/90 transition-all duration-200 font-medium text-sm"
+              className="flex items-center gap-2 px-5 py-2.5 bg-white text-[#000000] rounded-lg hover:bg-white/90 transition-all duration-200 font-semibold text-sm shadow-sm"
             >
-              <Presentation className="w-4 h-4" />
+              <Presentation className="w-5 h-5" />
               Generate PPT
             </button>
             <button
