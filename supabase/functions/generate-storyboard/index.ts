@@ -381,9 +381,11 @@ RETURN ONLY THE JSON OBJECT ABOVE - NO OTHER TEXT, NO MARKDOWN, NO EXPLANATIONS.
               maxOutputTokens: 8192,
               topP: 0.95,
               topK: 40,
-              // Force JSON output for models that support it (1.5-pro, 2.0, 2.5 and later)
-              ...(modelName.includes('1.5') || modelName.includes('2.0') || modelName.includes('2.5') 
+              // Force JSON output for all Gemini 2.5+ models
+              ...(modelName.includes('2.5') || modelName.includes('2.0') 
                 ? { responseMimeType: 'application/json' } 
+                : modelName.includes('1.5')
+                ? { responseMimeType: 'application/json' }
                 : {})
             },
             systemInstruction: {
@@ -511,13 +513,52 @@ RETURN ONLY THE JSON OBJECT ABOVE - NO OTHER TEXT, NO MARKDOWN, NO EXPLANATIONS.
     const data = await response.json()
     let responseText = ''
     
-    if (data.candidates && Array.isArray(data.candidates) && data.candidates.length > 0) {
+    // Handle response when responseMimeType is set to 'application/json'
+    // In this case, the response might be directly parseable
+    if (data && typeof data === 'object' && !data.candidates) {
+      // If response is already JSON object (when responseMimeType is used)
+      try {
+        // Check if it's already a valid storyboard response
+        if (data.controllingInsight || data.insightBuckets || data.frames) {
+          console.log('Response is already valid JSON object')
+          responseText = JSON.stringify(data)
+        } else {
+          // Try to extract text from other possible structures
+          if (data.text) {
+            responseText = String(data.text)
+          } else {
+            // If it's already JSON, stringify it and parse from text parts
+            responseText = JSON.stringify(data)
+          }
+        }
+      } catch (e) {
+        console.error('Error handling JSON response:', e)
+      }
+    }
+    
+    // Standard Gemini response structure
+    if (!responseText && data.candidates && Array.isArray(data.candidates) && data.candidates.length > 0) {
       const candidate = data.candidates[0]
       if (candidate.content && candidate.content.parts && Array.isArray(candidate.content.parts)) {
-        const textParts = candidate.content.parts
-          .filter((part: any) => part && part.text)
-          .map((part: any) => String(part.text))
-        responseText = textParts.join('\n')
+        // Check if parts contain JSON directly
+        const jsonParts = candidate.content.parts.filter((part: any) => {
+          if (part && typeof part === 'object' && !part.text && (part.controllingInsight || part.insightBuckets)) {
+            return true // This part is already a JSON object
+          }
+          return false
+        })
+        
+        if (jsonParts.length > 0) {
+          // If we found JSON objects directly, use the first one
+          console.log('Found JSON object directly in response parts')
+          responseText = JSON.stringify(jsonParts[0])
+        } else {
+          // Extract text from parts as before
+          const textParts = candidate.content.parts
+            .filter((part: any) => part && part.text)
+            .map((part: any) => String(part.text))
+          responseText = textParts.join('\n')
+        }
       }
     }
 
@@ -563,22 +604,31 @@ RETURN ONLY THE JSON OBJECT ABOVE - NO OTHER TEXT, NO MARKDOWN, NO EXPLANATIONS.
     }
 
     console.log('Raw response text length:', responseText.length)
-    console.log('Response text preview (first 500 chars):', responseText.substring(0, 500))
+    console.log('Response text preview (first 1000 chars):', responseText.substring(0, 1000))
+    console.log('Response text ending (last 500 chars):', responseText.substring(Math.max(0, responseText.length - 500)))
 
     // Parse JSON response - handle multiple formats with improved extraction
     let jsonText = String(responseText).trim()
     
-    // Remove markdown code blocks if present (handle various formats)
+    // Remove markdown code blocks if present (handle various formats) - more aggressive
     jsonText = jsonText
-      .replace(/^```json\s*/gm, '')
-      .replace(/^```\s*/gm, '')
-      .replace(/```\s*$/gm, '')
-      .replace(/```json\s*/g, '')
+      .replace(/```json\s*/gi, '')
       .replace(/```\s*/g, '')
+      .replace(/^```/gm, '')
+      .replace(/```$/gm, '')
+      .replace(/^`/gm, '')
+      .replace(/`$/gm, '')
       .trim()
     
-    // Remove any leading/trailing text that's not JSON
-    // Find the first { and last } to extract the JSON object
+    // Remove any explanatory text before/after JSON
+    // Look for common prefixes that AI might add
+    jsonText = jsonText
+      .replace(/^Here's? the (storyboard|JSON|response)[:\s]*/i, '')
+      .replace(/^(Here|The|This) (is|are)[:\s]*/i, '')
+      .replace(/^JSON[:\s]*/i, '')
+      .trim()
+    
+    // Find the JSON object boundaries more accurately
     const firstBrace = jsonText.indexOf('{')
     const lastBrace = jsonText.lastIndexOf('}')
     
@@ -589,17 +639,27 @@ RETURN ONLY THE JSON OBJECT ABOVE - NO OTHER TEXT, NO MARKDOWN, NO EXPLANATIONS.
       const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
         jsonText = jsonMatch[0]
+      } else {
+        // If still no JSON found, log the full response for debugging
+        console.error('Could not find JSON object in response')
+        console.error('Full response text:', responseText)
       }
     }
 
-    // Clean up common JSON issues
+    // Clean up common JSON issues more thoroughly
     jsonText = jsonText
-      // Remove any trailing commas before closing braces/brackets
+      // Remove any trailing commas before closing braces/brackets (more aggressive)
       .replace(/,(\s*[}\]])/g, '$1')
       // Remove comments if any (though JSON shouldn't have them)
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/\/\/.*$/gm, '')
+      // Fix unescaped newlines in strings
+      .replace(/([^\\])\\n/g, '$1\\\\n')
+      // Remove any leading/trailing whitespace again
       .trim()
+    
+    console.log('Extracted JSON preview (first 1000 chars):', jsonText.substring(0, 1000))
+    console.log('Extracted JSON ending (last 500 chars):', jsonText.substring(Math.max(0, jsonText.length - 500)))
 
     let storyboardResponse: StoryboardResponse | null = null
     try {
@@ -709,16 +769,31 @@ RETURN ONLY THE JSON OBJECT ABOVE - NO OTHER TEXT, NO MARKDOWN, NO EXPLANATIONS.
       }
       
       if (!parsed) {
+        // Log detailed information for debugging
+        console.error('=== JSON PARSING FAILED ===')
+        console.error('Parse error:', parseError?.message)
+        console.error('Parse error at position:', parseError?.message?.match(/position (\d+)/)?.[1])
+        console.error('Response text length:', responseText.length)
+        console.error('Response text (full):', responseText)
+        console.error('Attempted JSON (full):', jsonText)
+        console.error('First 500 chars:', responseText.substring(0, 500))
+        console.error('Last 500 chars:', responseText.substring(Math.max(0, responseText.length - 500)))
+        console.error('Used model:', usedModel)
+        console.error('===========================')
+        
         return new Response(
           JSON.stringify({ 
             status: 'error',
             error: 'Failed to parse storyboard response from AI. The response may not be valid JSON.',
             details: {
               parseError: parseError?.message,
+              parseErrorPosition: parseError?.message?.match(/position (\d+)/)?.[1] || 'unknown',
               responsePreview: responseText.substring(0, 500),
               responseLength: responseText.length,
-              attemptedJson: jsonText.substring(0, 500),
-              suggestion: 'The AI may have returned text instead of JSON. Check function logs for the full response. Try regenerating with a simpler research report or check if the Gemini API key has proper access.'
+              attemptedJsonPreview: jsonText.substring(0, 500),
+              attemptedJsonLength: jsonText.length,
+              usedModel: usedModel,
+              suggestion: 'Check Supabase function logs for the full response. The AI may have returned markdown or explanatory text instead of pure JSON. Try regenerating or check if the Gemini API key has proper access.'
             }
           }),
           { 
