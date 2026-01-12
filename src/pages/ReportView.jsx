@@ -3284,6 +3284,89 @@ ${report.conclusion || ''}
                     sources: normalizedSources.slice(0, 3)
                   })
                   
+                  // CLIENT-SIDE FALLBACK: Generate real search URLs if no sources found
+                  // This helps old reports that were created before source extraction improvements
+                  if (normalizedSources.length === 0 && research && research.topic) {
+                    console.log('⚠️ No sources found, generating client-side fallback URLs...')
+                    const query = research.topic || research.original_query || ''
+                    const encodedQuery = encodeURIComponent(query)
+                    
+                    // Generate real, searchable source URLs (same as backend fallback)
+                    const fallbackSources = [
+                      {
+                        url: `https://scholar.google.com/scholar?q=${encodedQuery}`,
+                        domain: 'scholar.google.com',
+                        date: new Date().toISOString().split('T')[0],
+                        title: 'Google Scholar - Academic Research'
+                      },
+                      {
+                        url: `https://pubmed.ncbi.nlm.nih.gov/?term=${encodedQuery}`,
+                        domain: 'pubmed.ncbi.nlm.nih.gov',
+                        date: new Date().toISOString().split('T')[0],
+                        title: 'PubMed - Medical Research Database'
+                      },
+                      {
+                        url: `https://arxiv.org/search/?query=${encodedQuery}&searchtype=all`,
+                        domain: 'arxiv.org',
+                        date: new Date().toISOString().split('T')[0],
+                        title: 'arXiv - Scientific Papers'
+                      },
+                      {
+                        url: `https://www.reuters.com/search?q=${encodedQuery}`,
+                        domain: 'reuters.com',
+                        date: new Date().toISOString().split('T')[0],
+                        title: 'Reuters - News & Analysis'
+                      },
+                      {
+                        url: `https://www.bbc.com/search?q=${encodedQuery}`,
+                        domain: 'bbc.com',
+                        date: new Date().toISOString().split('T')[0],
+                        title: 'BBC - News & Information'
+                      },
+                      {
+                        url: `https://www.theguardian.com/search?q=${encodedQuery}`,
+                        domain: 'theguardian.com',
+                        date: new Date().toISOString().split('T')[0],
+                        title: 'The Guardian - News & Analysis'
+                      },
+                      {
+                        url: `https://www.nytimes.com/search?query=${encodedQuery}`,
+                        domain: 'nytimes.com',
+                        date: new Date().toISOString().split('T')[0],
+                        title: 'The New York Times - News & Analysis'
+                      },
+                      {
+                        url: `https://www.gov.uk/search?q=${encodedQuery}`,
+                        domain: 'gov.uk',
+                        date: new Date().toISOString().split('T')[0],
+                        title: 'UK Government - Official Information'
+                      },
+                      {
+                        url: `https://www.nih.gov/search?q=${encodedQuery}`,
+                        domain: 'nih.gov',
+                        date: new Date().toISOString().split('T')[0],
+                        title: 'NIH - National Institutes of Health'
+                      },
+                      {
+                        url: `https://www.nature.com/search?q=${encodedQuery}`,
+                        domain: 'nature.com',
+                        date: new Date().toISOString().split('T')[0],
+                        title: 'Nature - Scientific Journal'
+                      }
+                    ]
+                    
+                    normalizedSources = fallbackSources
+                    console.log(`✅ Generated ${fallbackSources.length} client-side fallback sources for old report`)
+                    
+                    // Add a note that these are fallback sources
+                    // We'll display this in the UI
+                  }
+                  
+                  // Track if we're using fallback sources
+                  const usingFallbackSources = normalizedSources.length > 0 && 
+                                                normalizedSources[0]?.domain === 'scholar.google.com' &&
+                                                !report?.sources?.length
+                  
                   if (normalizedSources.length === 0) {
                     // Check if sources were filtered out (indicates placeholder sources)
                     const hadSourcesButFiltered = report?.sources && 
@@ -3342,6 +3425,13 @@ ${report.conclusion || ''}
                   
                   return (
                     <>
+                      {usingFallbackSources && (
+                        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
+                          <p className="font-medium mb-1">ℹ️ Fallback Sources</p>
+                          <p>This research was created before source extraction improvements. Showing search URLs to help you find relevant information about: <strong>{research.topic || 'this topic'}</strong></p>
+                          <p className="mt-2 text-xs opacity-75">💡 Start a new research to get automatically extracted sources from SerpAPI</p>
+                        </div>
+                      )}
                       {normalizedSources.map((source, index) => {
                       // Handle different source formats
                       let sourceObj = source
