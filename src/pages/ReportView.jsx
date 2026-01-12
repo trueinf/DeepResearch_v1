@@ -64,7 +64,7 @@ export default function ReportView() {
     headerHeight: 'normal', // 'small', 'normal', 'large'
     showSlideNumbers: true,
     showFooter: true,
-    footerText: 'AskDepth Research',
+    footerText: 'PITCH Research',
     textAlignment: 'left', // 'left', 'center', 'right'
     lineSpacing: 'normal', // 'tight', 'normal', 'loose'
     borderStyle: 'solid', // 'solid', 'dashed', 'dotted', 'none'
@@ -78,6 +78,15 @@ export default function ReportView() {
     accentBarPosition: 'bottom' // 'top', 'bottom', 'both', 'none'
   })
   const [isContentExpanded, setIsContentExpanded] = useState(false)
+  const [expandedSections, setExpandedSections] = useState({
+    executiveSummary: true,
+    detailedAnalysis: true,
+    keyFindings: true,
+    insights: true,
+    conclusion: true
+  })
+  const [sourceMetadata, setSourceMetadata] = useState({}) // Store fetched source metadata
+  const [loadingSources, setLoadingSources] = useState({}) // Track which sources are loading
   
   // Storyboard state
   const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false)
@@ -1277,8 +1286,8 @@ export default function ReportView() {
       const pptx = new pptxgen()
       
       // Set presentation properties
-      pptx.author = 'AskDepth Research'
-      pptx.company = 'AskDepth'
+      pptx.author = 'PITCH Research'
+      pptx.company = 'PITCH'
       const { title: cleanTitle, description: cleanDescription } = extractTitleAndDescription(
         research?.topic || report.topic,
         report.executiveSummary
@@ -3178,7 +3187,16 @@ ${report.conclusion || ''}
                   </span>
                 )}
               </div>
-              <div className="space-y-4 overflow-y-auto flex-1" style={{ maxHeight: '600px' }}>
+              <div 
+                className="space-y-4 overflow-y-auto flex-1" 
+                style={{ 
+                  maxHeight: Array.isArray(report.sources) && report.sources.length > 15 
+                    ? '1200px' 
+                    : Array.isArray(report.sources) && report.sources.length > 10 
+                    ? '1000px' 
+                    : '800px'
+                }}
+              >
                 {(() => {
                   // Enhanced debug logging
                   const sourcesDebug = {
@@ -3214,11 +3232,51 @@ ${report.conclusion || ''}
                     }
                   }
                   
-                  // Filter out invalid sources
+                  // Filter out invalid sources and example/placeholder sources
                   normalizedSources = normalizedSources.filter(s => {
                     if (!s) return false
                     // Must have either url or domain
-                    return s.url || s.domain || (typeof s === 'string' && s.length > 0)
+                    if (!(s.url || s.domain || (typeof s === 'string' && s.length > 0))) {
+                      return false
+                    }
+                    
+                    // Filter out example/placeholder URLs - check both url and domain
+                    const url = String(s.url || s.link || '').toLowerCase()
+                    const domain = String(s.domain || '').toLowerCase()
+                    const title = String(s.title || s.name || '').toLowerCase()
+                    
+                    // Check domain first (most reliable indicator)
+                    if (domain === 'example.com' || 
+                        domain === 'example.org' ||
+                        domain.includes('example') ||
+                        domain.includes('test') || 
+                        domain.includes('placeholder')) {
+                      console.log('Filtered out source with example domain:', s)
+                      return false
+                    }
+                    
+                    // Check URL for example/placeholder patterns
+                    if (url.includes('example.com') || 
+                        url.includes('example.org') ||
+                        url.includes('placeholder') || 
+                        url.includes('mock') ||
+                        url.includes('test.com') ||
+                        url.includes('fake') ||
+                        url.includes('lorem') ||
+                        url.includes('dummy') ||
+                        url.includes('research-source') ||
+                        (url.includes('/research/') && url.includes('example'))) { // Filter /research/ URLs only if from example.com
+                      console.log('Filtered out example/placeholder source (URL):', s)
+                      return false
+                    }
+                    
+                    // Check title pattern combined with example domain/url
+                    if (title.includes('research source') && (domain.includes('example') || url.includes('example'))) {
+                      console.log('Filtered out placeholder source (title pattern):', s)
+                      return false
+                    }
+                    
+                    return true
                   })
                   
                   console.log('✅ Normalized sources:', {
@@ -3227,6 +3285,11 @@ ${report.conclusion || ''}
                   })
                   
                   if (normalizedSources.length === 0) {
+                    // Check if sources were filtered out (indicates placeholder sources)
+                    const hadSourcesButFiltered = report?.sources && 
+                                                  Array.isArray(report.sources) && 
+                                                  report.sources.length > 0
+                    
                     return (
                       <div className="text-center py-8">
                         <div className="mb-3">
@@ -3234,8 +3297,37 @@ ${report.conclusion || ''}
                         </div>
                         <p className="text-sm font-medium text-[#333333]">No sources found</p>
                         <p className="text-xs mt-1.5 text-[#666666]">
-                          {!report ? 'Report data not loaded yet' : 'Sources will appear here once research completes'}
+                          {!report 
+                            ? 'Report data not loaded yet' 
+                            : hadSourcesButFiltered
+                            ? 'This research contains placeholder sources. Please start a new research to get real sources with actual URLs.'
+                            : 'Sources will appear here once research completes'}
                         </p>
+                        {hadSourcesButFiltered && (
+                          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-xs text-yellow-800">
+                            <p className="font-medium mb-1">ℹ️ Why no sources?</p>
+                            <p className="mb-2">This research was created before source extraction was improved. The placeholder sources have been filtered out.</p>
+                            <p className="font-medium mb-1">✅ To get real sources:</p>
+                            <ol className="list-decimal list-inside space-y-1 ml-2">
+                              <li>Start a new research query</li>
+                              <li>The system will automatically fetch real sources from web search</li>
+                              <li>Sources will appear in real-time as they're discovered</li>
+                            </ol>
+                            <p className="mt-2 text-xs opacity-75">💡 Tip: Configure SERPAPI_KEY in Supabase secrets for better source quality</p>
+                          </div>
+                        )}
+                        {!hadSourcesButFiltered && report && report.sources && report.sources.length === 0 && (
+                          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
+                            <p className="font-medium mb-1">ℹ️ No sources extracted</p>
+                            <p>The research completed but no sources were found. This may happen if:</p>
+                            <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
+                              <li>The LLM response didn't include URLs</li>
+                              <li>Web search (SerpAPI) is not configured</li>
+                              <li>All found URLs were filtered as invalid</li>
+                            </ul>
+                            <p className="mt-2 font-medium">💡 Solution: Start a new research with SerpAPI configured for real-time source extraction</p>
+                          </div>
+                        )}
                         {process.env.NODE_ENV === 'development' && (
                           <details className="mt-3 text-left text-xs text-[#666666]">
                             <summary className="cursor-pointer">Debug Info</summary>
@@ -3264,32 +3356,66 @@ ${report.conclusion || ''}
                       
                       // Ensure URL is valid and properly formatted
                       let sourceUrl = sourceObj.url || sourceObj.link || ''
-                      if (sourceUrl && !sourceUrl.startsWith('http://') && !sourceUrl.startsWith('https://')) {
-                        sourceUrl = 'https://' + sourceUrl
+                      
+                      // Validate and format URL
+                      let isValidUrl = false
+                      if (sourceUrl && sourceUrl.trim()) {
+                        // Add protocol if missing
+                        if (!sourceUrl.startsWith('http://') && !sourceUrl.startsWith('https://')) {
+                          sourceUrl = 'https://' + sourceUrl.trim()
+                        }
+                        
+                        // Validate URL format
+                        try {
+                          const url = new URL(sourceUrl.trim())
+                          isValidUrl = (url.protocol === 'http:' || url.protocol === 'https:') && 
+                                       url.hostname.length > 0 &&
+                                       !url.hostname.includes('example.com') // Double-check no example.com
+                          if (isValidUrl) {
+                            sourceUrl = url.href // Use normalized URL
+                          }
+                        } catch (e) {
+                          isValidUrl = false
+                          console.warn('Invalid source URL format:', sourceUrl, e)
+                        }
                       }
                       
                       const sourceTitle = sourceObj.title || sourceObj.name || sourceObj.domain || 'Source'
-                      const sourceDomain = sourceObj.domain || (sourceUrl ? new URL(sourceUrl).hostname.replace('www.', '') : 'Unknown')
+                      let sourceDomain = 'Unknown'
+                      if (isValidUrl) {
+                        try {
+                          sourceDomain = new URL(sourceUrl).hostname.replace('www.', '')
+                        } catch (e) {
+                          sourceDomain = sourceObj.domain || 'Unknown'
+                        }
+                      } else {
+                        sourceDomain = sourceObj.domain || 'Unknown'
+                      }
                       const sourceDate = sourceObj.date || sourceObj.publishedDate || new Date().toISOString().split('T')[0]
                       
                       return (
                   <a
                     key={index}
-                    href={sourceUrl || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block bg-white border border-[#e0e0e0] rounded-lg p-4 transition-colors duration-200 group cursor-pointer hover:border-[#d0d0d0]"
+                    href={isValidUrl ? sourceUrl : '#'}
+                    target={isValidUrl ? "_blank" : undefined}
+                    rel={isValidUrl ? "noopener noreferrer" : undefined}
+                    className="block bg-white border border-[#e0e0e0] rounded-lg p-4 transition-colors duration-200 group cursor-pointer hover:border-[#d0d0d0] hover:shadow-sm"
                     onClick={(e) => {
-                      // Allow navigation to all URLs - real sources should work now
-                      if (!sourceUrl || sourceUrl === '#') {
+                      if (!isValidUrl || !sourceUrl) {
                         e.preventDefault()
+                        console.warn('Cannot navigate: Invalid or missing URL')
+                        return false
                       }
+                      // For valid URLs, let the browser handle navigation naturally
+                      // The href and target="_blank" will open in new tab
+                      console.log('Opening source:', sourceUrl)
                     }}
+                    style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="mb-2">
-                          <span className="text-sm font-bold text-[#333333]">
+                          <span className="text-sm font-bold text-[#333333] group-hover:text-[#1a1a1a]">
                             #{index + 1} {sourceTitle}
                           </span>
                         </div>
@@ -3304,7 +3430,7 @@ ${report.conclusion || ''}
                           </div>
                         )}
                       </div>
-                      <ExternalLink className="w-4 h-4 text-[#666666] group-hover:text-[#333333] flex-shrink-0 mt-0.5 transition-colors duration-200" />
+                      <ExternalLink className="w-4 h-4 text-[#666666] group-hover:text-[#333333] flex-shrink-0 mt-0.5 transition-colors duration-200 pointer-events-none" />
                     </div>
                   </a>
                     )
@@ -3994,7 +4120,7 @@ ${report.conclusion || ''}
                     value={pptSettings.footerText}
                     onChange={(e) => setPptSettings(prev => ({ ...prev, footerText: e.target.value }))}
                     className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 transition-all"
-                    placeholder="AskDepth Research"
+                    placeholder="PITCH Research"
                   />
                 </div>
               )}
@@ -4151,7 +4277,7 @@ ${report.conclusion || ''}
                   const titleSlideTitle = research?.topic || report?.topic || 'Research Presentation'
                   const titleSlideSubtitle = report?.executiveSummary 
                     ? (report.executiveSummary.length > 100 ? report.executiveSummary.substring(0, 100) + '...' : report.executiveSummary)
-                    : 'Generated by AskDepth Research'
+                    : 'Generated by PITCH Research'
                   
                   // Content slide content
                   const slideTitle = previewSlide?.title || titleSlideTitle

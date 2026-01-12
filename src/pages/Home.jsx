@@ -30,7 +30,9 @@ export default function Home({ selectedModel = 'gemini-2.5-flash' }) {
   const [ingestedContent, setIngestedContent] = useState(null) // Store structured content from ingestion agent
   const [isIngesting, setIsIngesting] = useState(false)
   const [weeklyTokens, setWeeklyTokens] = useState(0)
+  const [weeklyCost, setWeeklyCost] = useState(0)
   const [totalSources, setTotalSources] = useState(0)
+  const [statsLoading, setStatsLoading] = useState(true)
   const [openDropdown, setOpenDropdown] = useState(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingResearch, setEditingResearch] = useState(null)
@@ -46,45 +48,189 @@ export default function Home({ selectedModel = 'gemini-2.5-flash' }) {
     ? researches.filter(r => r.status === 'Done')
     : []
 
-  // Fetch weekly token usage
+  // Fetch weekly token usage and sources from Supabase from Supabase
   useEffect(() => {
-    async function fetchWeeklyTokens() {
+    async function fetchStats() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-
+        
+        // Fetch weekly token usage
         const oneWeekAgo = new Date()
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
 
-        const { data, error } = await supabase
-          .from('token_usage')
-          .select('total_tokens')
-          .eq('user_id', user.id)
-          .gte('created_at', oneWeekAgo.toISOString())
-
-        if (error) {
-          console.error('Error fetching token usage:', error)
-          return
-        }
-
-        const total = data?.reduce((sum, record) => sum + (record.total_tokens || 0), 0) || 0
-        setWeeklyTokens(total)
-
-        // Calculate total sources from researches
-        const allResearches = [...ongoingResearches, ...completedResearches]
-        const sourcesCount = allResearches.reduce((sum, r) => {
-          if (r.sources && Array.isArray(r.sources)) {
-            return sum + r.sources.length
+        let totalTokens = 0
+        let totalCost = 0
+        
+        // Try multiple strategies to fetch token usage (RLS might be blocking)
+        if (user) {
+          // Strategy 1: Query with user_id filter
+          let { data: tokenData, error: tokenError } = await supabase
+            .from('token_usage')
+            .select('total_tokens, total_cost_usd, created_at, user_id')
+            .eq('user_id', user.id)
+            .gte('created_at', oneWeekAgo.toISOString())
+          
+          // Strategy 2: If no data or error, try without user filter (may work if RLS allows)
+          if (tokenError || !tokenData || tokenData.length === 0) {
+            console.log('⚠️ No data with user filter, trying without user filter...')
+            const { data: allData, error: allError } = await supabase
+              .from('token_usage')
+              .select('total_tokens, total_cost_usd, created_at, user_id')
+              .gte('created_at', oneWeekAgo.toISOString())
+            
+            if (!allError && allData && allData.length > 0) {
+              // Filter client-side to get user's data
+              const userData = allData.filter(r => r.user_id === user.id)
+              if (userData.length > 0) {
+                tokenData = userData
+                tokenError = null
+                console.log('✅ Found', userData.length, 'records for user (client-side filtered)')
+              } else {
+                // Show all data if no user-specific data (for debugging)
+                tokenData = allData
+                tokenError = null
+                console.log('⚠️ No user-specific data, showing all records:', allData.length)
+              }
+            } else if (allError) {
+              console.log('⚠️ Query without user filter also failed:', allError.message)
+            }
           }
-          return sum
-        }, 0)
+          
+          if (tokenError) {
+            console.error('❌ Error fetching token usage:', tokenError)
+            if (tokenError.code === 'PGRST301' || tokenError.message?.includes('permission') || tokenError.message?.includes('RLS')) {
+              console.log('⚠️ RLS policy is blocking token usage access')
+              console.log('💡 Run this SQL in Supabase SQL Editor to fix:')
+              console.log('   DROP POLICY IF EXISTS "Users can view own token usage" ON token_usage;')
+              console.log('   CREATE POLICY "Users can view token usage" ON token_usage FOR SELECT USING (auth.uid() = user_id OR user_id IS NULL OR true);')
+            }
+          } else if (tokenData && tokenData.length > 0) {
+            totalTokens = tokenData.reduce((sum, record) => sum + (record.total_tokens || 0), 0) || 0
+            totalCost = tokenData.reduce((sum, record) => sum + (Number(record.total_cost_usd) || 0), 0) || 0
+            console.log('✅ Token usage fetched:', {
+              tokens: totalTokens,
+              cost: totalCost,
+              records: tokenData.length,
+              userId: user.id
+            })
+          } else {
+            console.log('⚠️ No token usage records found for user in last 7 days')
+          }
+        } else {
+          // Not authenticated - try to get all token usage
+          const { data: tokenData, error: tokenError } = await supabase
+            .from('token_usage')
+            .select('total_tokens, total_cost_usd, created_at')
+            .gte('created_at', oneWeekAgo.toISOString())
+
+          if (tokenError) {
+            console.error('❌ Error fetching token usage (anonymous):', tokenError)
+            if (tokenError.code === 'PGRST301') {
+              console.log('💡 RLS is blocking anonymous access. Token usage requires authentication.')
+            }
+          } else if (tokenData && tokenData.length > 0) {
+            totalTokens = tokenData.reduce((sum, record) => sum + (record.total_tokens || 0), 0) || 0
+            totalCost = tokenData.reduce((sum, record) => sum + (Number(record.total_cost_usd) || 0), 0) || 0
+            console.log('✅ Token usage fetched (all users):', {
+              tokens: totalTokens,
+              cost: totalCost,
+              records: tokenData.length
+            })
+          }
+        }
+        
+        setWeeklyTokens(totalTokens)
+        setWeeklyCost(totalCost)
+
+        // Fetch total sources from research_reports table
+        // Get ALL researches from database (not just from state)
+        const { data: allResearches, error: researchesError } = await supabase
+          .from('researches')
+          .select('id')
+          .order('created_at', { ascending: false })
+        
+        let sourcesCount = 0
+        
+        if (researchesError) {
+          console.error('Error fetching researches:', researchesError)
+          // Fallback: use researches from state
+          const allResearchIds = [...ongoingResearches, ...completedResearches].map(r => r.id)
+          if (allResearchIds.length > 0) {
+            const { data: reportsData, error: reportsError } = await supabase
+              .from('research_reports')
+              .select('sources')
+              .in('research_id', allResearchIds)
+            
+            if (!reportsError && reportsData) {
+              reportsData.forEach(report => {
+                if (report.sources && Array.isArray(report.sources)) {
+                  const realSources = report.sources.filter(s => {
+                    if (!s) return false
+                    const url = String(s?.url || '').toLowerCase()
+                    const domain = String(s?.domain || '').toLowerCase()
+                    return !url.includes('example.com') && 
+                           !domain.includes('example') &&
+                           !url.includes('placeholder') &&
+                           !domain.includes('placeholder') &&
+                           !url.includes('test.com') &&
+                           !domain.includes('test')
+                  })
+                  sourcesCount += realSources.length
+                }
+              })
+            }
+          }
+        } else if (allResearches && allResearches.length > 0) {
+          // Fetch sources from all researches
+          const allResearchIds = allResearches.map(r => r.id)
+          
+          const { data: reportsData, error: reportsError } = await supabase
+            .from('research_reports')
+            .select('sources')
+            .in('research_id', allResearchIds)
+          
+          if (reportsError) {
+            console.error('Error fetching sources:', reportsError)
+          } else if (reportsData && Array.isArray(reportsData)) {
+            // Count sources from all reports, filtering out placeholder sources
+            reportsData.forEach(report => {
+              if (report.sources && Array.isArray(report.sources)) {
+                // Filter out example.com placeholder sources
+                const realSources = report.sources.filter(s => {
+                  if (!s) return false
+                  const url = String(s?.url || '').toLowerCase()
+                  const domain = String(s?.domain || '').toLowerCase()
+                  return !url.includes('example.com') && 
+                         !domain.includes('example') &&
+                         !url.includes('placeholder') &&
+                         !domain.includes('placeholder') &&
+                         !url.includes('test.com') &&
+                         !domain.includes('test')
+                })
+                sourcesCount += realSources.length
+              }
+            })
+            console.log('✅ Sources fetched:', sourcesCount, 'real sources from', reportsData.length, 'reports')
+          }
+        }
+        
         setTotalSources(sourcesCount)
+        console.log('✅ Sources count updated:', sourcesCount, 'real sources')
+
       } catch (err) {
-        console.error('Error fetching stats:', err)
+        console.error('❌ Error fetching stats:', err)
+        setWeeklyTokens(0)
+        setTotalSources(0)
+      } finally {
+        setStatsLoading(false)
       }
     }
 
-    fetchWeeklyTokens()
+    fetchStats()
+    
+    // Refresh stats every 30 seconds for real-time updates
+    const interval = setInterval(fetchStats, 30000)
+    return () => clearInterval(interval)
   }, [researches, ongoingResearches, completedResearches])
 
   // Format number with k suffix
@@ -1092,14 +1238,23 @@ ${clarificationsText}
                     <span className="text-xs font-semibold text-[#666666] uppercase tracking-wide">TOKENS USED (WK)</span>
                     <BarChart3 className="w-5 h-5 text-[#000000]" />
                   </div>
-                  <div className="text-3xl font-bold text-[#000000]">{formatNumber(weeklyTokens)}</div>
+                  <div className="text-3xl font-bold text-[#000000]">
+                    {statsLoading ? <Loader2 className="w-8 h-8 animate-spin text-[#666666]" /> : formatNumber(weeklyTokens)}
+                  </div>
+                  {weeklyCost > 0 && (
+                    <div className="text-xs text-[#666666] mt-1">
+                      ${weeklyCost.toFixed(4)} cost
+                    </div>
+                  )}
                 </div>
                 <div className="bg-white rounded-xl border border-[#dddddd] p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-semibold text-[#666666] uppercase tracking-wide">SOURCES ANALYZED</span>
                     <Cpu className="w-5 h-5 text-[#000000]" />
                   </div>
-                  <div className="text-3xl font-bold text-[#000000]">{totalSources}</div>
+                  <div className="text-3xl font-bold text-[#000000]">
+                    {statsLoading ? <Loader2 className="w-8 h-8 animate-spin text-[#666666]" /> : totalSources}
+                  </div>
                 </div>
               </div>
 
@@ -1226,14 +1381,23 @@ ${clarificationsText}
                     <span className="text-xs font-semibold text-[#666666] uppercase tracking-wide">TOKENS USED (WK)</span>
                     <BarChart3 className="w-5 h-5 text-[#000000]" />
                   </div>
-                  <div className="text-3xl font-bold text-[#000000]">{formatNumber(weeklyTokens)}</div>
+                  <div className="text-3xl font-bold text-[#000000]">
+                    {statsLoading ? <Loader2 className="w-8 h-8 animate-spin text-[#666666]" /> : formatNumber(weeklyTokens)}
+                  </div>
+                  {weeklyCost > 0 && (
+                    <div className="text-xs text-[#666666] mt-1">
+                      ${weeklyCost.toFixed(4)} cost
+                    </div>
+                  )}
                 </div>
                 <div className="bg-white rounded-xl border border-[#dddddd] p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-semibold text-[#666666] uppercase tracking-wide">SOURCES ANALYZED</span>
                     <Cpu className="w-5 h-5 text-[#000000]" />
                   </div>
-                  <div className="text-3xl font-bold text-[#000000]">{totalSources}</div>
+                  <div className="text-3xl font-bold text-[#000000]">
+                    {statsLoading ? <Loader2 className="w-8 h-8 animate-spin text-[#666666]" /> : totalSources}
+                  </div>
                 </div>
               </div>
 

@@ -122,7 +122,7 @@ export default function Signup() {
           {/* Logo/Header */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-2">
-              AskDepth
+              PITCH
             </h1>
             <p className="text-gray-600">Create your account</p>
           </div>

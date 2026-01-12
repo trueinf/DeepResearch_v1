@@ -410,8 +410,8 @@ export default function PPTSlideEditor() {
       pptx.layout = 'CUSTOM'
 
       // Set presentation properties
-      pptx.author = 'AskDepth Research'
-      pptx.company = 'AskDepth'
+      pptx.author = 'PITCH Research'
+      pptx.company = 'PITCH'
       pptx.title = slides[0]?.title || 'Research Presentation'
 
       slides.forEach((slide, index) => {

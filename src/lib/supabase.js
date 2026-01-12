@@ -19,7 +19,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
   global: {
     headers: {
-      'x-client-info': 'askdepth-app',
+      'x-client-info': 'pitch-app',
     },
   },
   db: {

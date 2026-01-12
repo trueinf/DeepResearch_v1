@@ -40,7 +40,7 @@ export default function Sidebar() {
             <Sparkles className="w-6 h-6 text-white" />
           </div>
           {!isCollapsed && (
-            <span className="font-bold text-lg text-white tracking-tight">AskDepth</span>
+            <span className="font-bold text-lg text-white tracking-tight">PITCH</span>
           )}
         </div>
       </div>
