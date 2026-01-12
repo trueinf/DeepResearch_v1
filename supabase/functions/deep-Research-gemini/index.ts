@@ -130,7 +130,12 @@ async function saveTokenUsage(
   }
 }
 
-async function fetchSerpResults(query: string, numResults = 10): Promise<SerpResult[]> {
+async function fetchSerpResults(
+  query: string, 
+  numResults = 10,
+  researchId?: string,
+  userId?: string
+): Promise<SerpResult[]> {
   if (!SERPAPI_KEY) {
     console.warn('SERPAPI_KEY not configured, skipping web search')
     return []
@@ -174,6 +179,40 @@ async function fetchSerpResults(query: string, numResults = 10): Promise<SerpRes
     }
     if (Array.isArray(data.top_stories)) {
       data.top_stories.forEach(addResult)
+    }
+
+    // Track SerpAPI usage (SerpAPI charges per search, not per token)
+    // Average cost per search is ~$0.002 for Google search
+    if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY && results.length > 0) {
+      try {
+        const serpApiCost = 0.002 // $0.002 per search (approximate)
+        // @ts-ignore - Deno runtime module import
+        const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2')
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+        await supabase.from('token_usage').insert({
+          research_id: researchId || null,
+          user_id: userId || null,
+          function_name: 'serpapi-web-search',
+          model: 'serpapi-google-search',
+          input_tokens: 0, // SerpAPI doesn't use tokens
+          output_tokens: results.length, // Use result count as "output"
+          total_tokens: results.length,
+          input_cost_usd: 0,
+          output_cost_usd: serpApiCost,
+          total_cost_usd: serpApiCost,
+          metadata: {
+            query: query,
+            num_results: results.length,
+            serpapi_search: true
+          }
+        })
+
+        console.log(`✅ SerpAPI usage tracked: $${serpApiCost.toFixed(6)} for ${results.length} results`)
+      } catch (error) {
+        console.error('❌ Error tracking SerpAPI usage:', error)
+        // Don't throw - tracking failure shouldn't break the function
+      }
     }
 
     return results.slice(0, numResults)
@@ -290,7 +329,8 @@ serve(async (req) => {
     
     // Always fetch web search results to get real sources
     console.log('🔍 Starting web search for real sources...')
-    webSearchPromise = fetchSerpResults(originalQuery, 15) // Get more sources
+    const userId = await getUserIdFromRequest(req)
+    webSearchPromise = fetchSerpResults(originalQuery, 15, researchId, userId) // Get more sources
 
     // Get depth configuration
     const depth = requestedDepth || 'deep'
